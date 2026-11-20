@@ -1,0 +1,605 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SystemRole {
+  USER
+  CURATOR
+  ADMIN
+}
+
+enum ResourceVisibility {
+  PRIVATE
+  SHARED
+  PUBLIC
+}
+
+enum ObjectiveStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum ObjectiveMemberRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum CatalogStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MaterialKind {
+  NOTE
+  ARTICLE
+  BOOK
+  VIDEO
+  FILE
+  LINK
+  AI_GENERATED
+}
+
+enum ContentProvenance {
+  OFFICIAL
+  AUTHORED
+  LICENSED
+  AI_GENERATED
+}
+
+enum QuestionKind {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+}
+
+enum TaskStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+  CANCELLED
+}
+
+enum TaskOrigin {
+  GENERATED
+  MANUAL
+  RESCHEDULED
+}
+
+enum SessionKind {
+  THEORY
+  PRACTICE
+  REVIEW
+  MOCK_EXAM
+}
+
+enum ReviewStatus {
+  SCHEDULED
+  COMPLETED
+  SKIPPED
+}
+
+model User {
+  id            String     @id @default(uuid()) @db.Uuid
+  name          String?
+  email         String     @unique
+  emailVerified DateTime?
+  image         String?
+  role          SystemRole @default(USER)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  accounts         Account[]
+  sessions         AuthSession[]
+  studyAreas       StudyArea[]
+  ownedObjectives  Objective[]          @relation("ObjectiveOwner")
+  objectiveMembers ObjectiveMember[]
+  materials        Material[]           @relation("MaterialAuthor")
+  questions        Question[]           @relation("QuestionAuthor")
+  studyPlans       StudyPlan[]
+  studySessions    StudySession[]
+  attempts         QuestionAttempt[]
+  reviewItems      ReviewItem[]
+  errorEntries     ErrorNotebookEntry[]
+}
+
+model Account {
+  userId            String  @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refreshToken      String? @db.Text
+  accessToken       String? @db.Text
+  expiresAt         Int?
+  tokenType         String?
+  scope             String?
+  idToken           String? @db.Text
+  sessionState      String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+  @@index([userId])
+}
+
+model AuthSession {
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model StudyArea {
+  id          String      @id @default(uuid()) @db.Uuid
+  ownerId     String      @db.Uuid
+  name        String      @db.VarChar(120)
+  description String?     @db.Text
+  color       String?     @db.VarChar(20)
+  archivedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  owner       User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  objectives  Objective[]
+
+  @@unique([ownerId, name])
+  @@index([ownerId, archivedAt])
+}
+
+model ObjectiveType {
+  id          String      @id @default(uuid()) @db.Uuid
+  ownerId     String?     @db.Uuid
+  key         String      @db.VarChar(50)
+  name        String      @db.VarChar(80)
+  description String?     @db.Text
+  isSystem    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  objectives  Objective[]
+
+  @@unique([ownerId, key])
+}
+
+model Objective {
+  id          String               @id @default(uuid()) @db.Uuid
+  ownerId     String               @db.Uuid
+  studyAreaId String?              @db.Uuid
+  typeId      String               @db.Uuid
+  name        String               @db.VarChar(160)
+  description String?              @db.Text
+  priority    Int                  @default(3) @db.SmallInt
+  deadline    DateTime?            @db.Date
+  status      ObjectiveStatus      @default(ACTIVE)
+  archivedAt  DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  owner       User                 @relation("ObjectiveOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  studyArea   StudyArea?           @relation(fields: [studyAreaId], references: [id], onDelete: SetNull)
+  type        ObjectiveType        @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  members     ObjectiveMember[]
+  notices     ObjectiveNotice[]
+  subjects    ObjectiveSubject[]
+  plans       StudyPlanObjective[]
+  sessions    StudySession[]
+
+  @@index([ownerId, status])
+  @@index([deadline])
+}
+
+model ObjectiveMember {
+  objectiveId String              @db.Uuid
+  userId      String              @db.Uuid
+  role        ObjectiveMemberRole @default(VIEWER)
+  createdAt   DateTime            @default(now())
+  objective   Objective           @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([objectiveId, userId])
+  @@index([userId])
+}
+
+model Organization {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(160)
+  acronym   String?  @db.VarChar(30)
+  country   String   @default("BR") @db.Char(2)
+  createdAt DateTime @default(now())
+  exams     Exam[]
+
+  @@unique([country, name])
+}
+
+model ExamBoard {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String     @db.VarChar(160)
+  acronym   String?    @db.VarChar(30)
+  createdAt DateTime   @default(now())
+  notices   Notice[]
+  questions Question[]
+
+  @@unique([name])
+}
+
+model Exam {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @db.Uuid
+  name           String         @db.VarChar(180)
+  year           Int?
+  status         CatalogStatus  @default(DRAFT)
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  positions      ExamPosition[]
+  notices        Notice[]
+
+  @@unique([organizationId, name, year])
+}
+
+model ExamPosition {
+  id              String           @id @default(uuid()) @db.Uuid
+  examId          String           @db.Uuid
+  name            String           @db.VarChar(160)
+  specialty       String?          @db.VarChar(160)
+  requirements    String?          @db.Text
+  exam            Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+  noticePositions NoticePosition[]
+
+  @@unique([examId, name, specialty])
+}
+
+model Notice {
+  id          String            @id @default(uuid()) @db.Uuid
+  examId      String            @db.Uuid
+  boardId     String?           @db.Uuid
+  title       String            @db.VarChar(200)
+  status      CatalogStatus     @default(DRAFT)
+  publishedAt DateTime?
+  exam        Exam              @relation(fields: [examId], references: [id], onDelete: Restrict)
+  board       ExamBoard?        @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  versions    NoticeVersion[]
+  positions   NoticePosition[]
+  objectives  ObjectiveNotice[]
+}
+
+model NoticeVersion {
+  id             String              @id @default(uuid()) @db.Uuid
+  noticeId       String              @db.Uuid
+  version        Int
+  status         CatalogStatus       @default(DRAFT)
+  sourceUrl      String?
+  sourceFileKey  String?
+  extractionData Json?
+  reviewerId     String?             @db.Uuid
+  reviewedAt     DateTime?
+  createdAt      DateTime            @default(now())
+  notice         Notice              @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  subjectRules   NoticeSubjectRule[]
+
+  @@unique([noticeId, version])
+  @@index([status])
+}
+
+model NoticePosition {
+  noticeId   String       @db.Uuid
+  positionId String       @db.Uuid
+  vacancies  Int?
+  notice     Notice       @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  position   ExamPosition @relation(fields: [positionId], references: [id], onDelete: Restrict)
+
+  @@id([noticeId, positionId])
+}
+
+model ObjectiveNotice {
+  objectiveId String    @db.Uuid
+  noticeId    String    @db.Uuid
+  objective   Objective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  notice      Notice    @relation(fields: [noticeId], references: [id], onDelete: Restrict)
+
+  @@id([objectiveId, noticeId])
+}
+
+model Subject {
+  id          String              @id @default(uuid()) @db.Uuid
+  name        String              @db.VarChar(160)
+  slug        String              @unique @db.VarChar(180)
+  description String?             @db.Text
+  status      CatalogStatus       @default(DRAFT)
+  topics      Topic[]
+  objectives  ObjectiveSubject[]
+  noticeRules NoticeSubjectRule[]
+}
+
+model Topic {
+  id          String               @id @default(uuid()) @db.Uuid
+  subjectId   String               @db.Uuid
+  parentId    String?              @db.Uuid
+  name        String               @db.VarChar(200)
+  slug        String               @db.VarChar(220)
+  description String?              @db.Text
+  position    Int                  @default(0)
+  subject     Subject              @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  parent      Topic?               @relation("TopicTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children    Topic[]              @relation("TopicTree")
+  materials   MaterialTopic[]
+  questions   QuestionTopic[]
+  noticeRules NoticeSubjectRule[]
+  planTasks   PlanTask[]
+  sessions    StudySession[]
+  reviewItems ReviewItem[]
+  errors      ErrorNotebookEntry[]
+
+  @@unique([subjectId, parentId, slug])
+  @@index([subjectId, parentId, position])
+}
+
+model ObjectiveSubject {
+  objectiveId String    @db.Uuid
+  subjectId   String    @db.Uuid
+  weight      Decimal   @default(1) @db.Decimal(8, 3)
+  priority    Int       @default(3) @db.SmallInt
+  objective   Objective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  subject     Subject   @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+
+  @@id([objectiveId, subjectId])
+}
+
+model NoticeSubjectRule {
+  id              String        @id @default(uuid()) @db.Uuid
+  noticeVersionId String        @db.Uuid
+  subjectId       String        @db.Uuid
+  topicId         String?       @db.Uuid
+  weight          Decimal?      @db.Decimal(8, 3)
+  questionCount   Int?
+  requirementText String?       @db.Text
+  noticeVersion   NoticeVersion @relation(fields: [noticeVersionId], references: [id], onDelete: Cascade)
+  subject         Subject       @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  topic           Topic?        @relation(fields: [topicId], references: [id], onDelete: Restrict)
+
+  @@unique([noticeVersionId, subjectId, topicId])
+}
+
+model Material {
+  id             String             @id @default(uuid()) @db.Uuid
+  authorId       String             @db.Uuid
+  title          String             @db.VarChar(220)
+  kind           MaterialKind
+  provenance     ContentProvenance
+  visibility     ResourceVisibility @default(PRIVATE)
+  status         CatalogStatus      @default(DRAFT)
+  license        String?            @db.VarChar(120)
+  sourceUrl      String?
+  currentVersion Int                @default(1)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  author         User               @relation("MaterialAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  versions       MaterialVersion[]
+  topics         MaterialTopic[]
+
+  @@index([authorId, visibility, status])
+}
+
+model MaterialVersion {
+  id          String   @id @default(uuid()) @db.Uuid
+  materialId  String   @db.Uuid
+  version     Int
+  content     String?  @db.Text
+  fileKey     String?
+  mimeType    String?  @db.VarChar(120)
+  checksum    String?  @db.VarChar(128)
+  aiGenerated Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  material    Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([materialId, version])
+}
+
+model MaterialTopic {
+  materialId String   @db.Uuid
+  topicId    String   @db.Uuid
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  topic      Topic    @relation(fields: [topicId], references: [id], onDelete: Restrict)
+
+  @@id([materialId, topicId])
+}
+
+model Question {
+  id            String               @id @default(uuid()) @db.Uuid
+  authorId      String?              @db.Uuid
+  boardId       String?              @db.Uuid
+  kind          QuestionKind
+  provenance    ContentProvenance
+  visibility    ResourceVisibility   @default(PRIVATE)
+  status        CatalogStatus        @default(DRAFT)
+  statement     String               @db.Text
+  explanation   String?              @db.Text
+  year          Int?
+  sourceLabel   String?              @db.VarChar(220)
+  copyrightNote String?              @db.Text
+  aiModel       String?              @db.VarChar(100)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  author        User?                @relation("QuestionAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  board         ExamBoard?           @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  options       QuestionOption[]
+  topics        QuestionTopic[]
+  attempts      QuestionAttempt[]
+  errors        ErrorNotebookEntry[]
+
+  @@index([authorId, visibility, status])
+  @@index([boardId, year])
+}
+
+model QuestionOption {
+  id         String   @id @default(uuid()) @db.Uuid
+  questionId String   @db.Uuid
+  label      String   @db.VarChar(10)
+  text       String   @db.Text
+  isCorrect  Boolean  @default(false)
+  position   Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, label])
+  @@unique([questionId, position])
+}
+
+model QuestionTopic {
+  questionId String   @db.Uuid
+  topicId    String   @db.Uuid
+  isPrimary  Boolean  @default(false)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  topic      Topic    @relation(fields: [topicId], references: [id], onDelete: Restrict)
+
+  @@id([questionId, topicId])
+}
+
+model StudyPlan {
+  id           String               @id @default(uuid()) @db.Uuid
+  ownerId      String               @db.Uuid
+  name         String               @db.VarChar(160)
+  timezone     String               @default("America/Bahia") @db.VarChar(80)
+  rulesVersion Int                  @default(1)
+  rules        Json
+  active       Boolean              @default(true)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  owner        User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  objectives   StudyPlanObjective[]
+  availability StudyAvailability[]
+  tasks        PlanTask[]
+  sessions     StudySession[]
+
+  @@index([ownerId, active])
+}
+
+model StudyPlanObjective {
+  planId      String    @db.Uuid
+  objectiveId String    @db.Uuid
+  priority    Int       @default(3) @db.SmallInt
+  plan        StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  objective   Objective @relation(fields: [objectiveId], references: [id], onDelete: Restrict)
+
+  @@id([planId, objectiveId])
+}
+
+model StudyAvailability {
+  id          String    @id @default(uuid()) @db.Uuid
+  planId      String    @db.Uuid
+  dayOfWeek   Int       @db.SmallInt
+  startMinute Int       @db.SmallInt
+  endMinute   Int       @db.SmallInt
+  plan        StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, dayOfWeek, startMinute])
+}
+
+model PlanTask {
+  id               String         @id @default(uuid()) @db.Uuid
+  planId           String         @db.Uuid
+  topicId          String?        @db.Uuid
+  title            String         @db.VarChar(200)
+  scheduledStart   DateTime
+  scheduledMinutes Int
+  status           TaskStatus     @default(PLANNED)
+  origin           TaskOrigin     @default(GENERATED)
+  manualLock       Boolean        @default(false)
+  generationKey    String?        @db.VarChar(120)
+  supersedesId     String?        @db.Uuid
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  plan             StudyPlan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+  topic            Topic?         @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  supersedes       PlanTask?      @relation("TaskReschedule", fields: [supersedesId], references: [id], onDelete: SetNull)
+  rescheduledAs    PlanTask[]     @relation("TaskReschedule")
+  sessions         StudySession[]
+
+  @@index([planId, scheduledStart, status])
+  @@index([generationKey])
+}
+
+model StudySession {
+  id              String            @id @default(uuid()) @db.Uuid
+  userId          String            @db.Uuid
+  planId          String?           @db.Uuid
+  taskId          String?           @db.Uuid
+  objectiveId     String?           @db.Uuid
+  topicId         String?           @db.Uuid
+  kind            SessionKind
+  startedAt       DateTime
+  endedAt         DateTime?
+  durationSeconds Int?
+  notes           String?           @db.Text
+  createdAt       DateTime          @default(now())
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan            StudyPlan?        @relation(fields: [planId], references: [id], onDelete: SetNull)
+  task            PlanTask?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  objective       Objective?        @relation(fields: [objectiveId], references: [id], onDelete: SetNull)
+  topic           Topic?            @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  attempts        QuestionAttempt[]
+
+  @@index([userId, startedAt])
+  @@index([objectiveId, topicId])
+}
+
+model QuestionAttempt {
+  id                String        @id @default(uuid()) @db.Uuid
+  userId            String        @db.Uuid
+  questionId        String        @db.Uuid
+  sessionId         String?       @db.Uuid
+  selectedOptionIds String[]      @db.Uuid
+  isCorrect         Boolean
+  answeredAt        DateTime      @default(now())
+  responseTimeMs    Int?
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question          Question      @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  session           StudySession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, answeredAt])
+  @@index([questionId])
+}
+
+model ReviewItem {
+  id             String       @id @default(uuid()) @db.Uuid
+  userId         String       @db.Uuid
+  topicId        String       @db.Uuid
+  dueAt          DateTime
+  intervalDays   Int
+  easeFactor     Decimal      @default(2.5) @db.Decimal(5, 2)
+  repetitions    Int          @default(0)
+  status         ReviewStatus @default(SCHEDULED)
+  lastReviewedAt DateTime?
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic          Topic        @relation(fields: [topicId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, topicId])
+  @@index([userId, dueAt, status])
+}
+
+model ErrorNotebookEntry {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  questionId String?   @db.Uuid
+  topicId    String?   @db.Uuid
+  note       String?   @db.Text
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question   Question? @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  topic      Topic?    @relation(fields: [topicId], references: [id], onDelete: SetNull)
+
+  @@index([userId, resolvedAt])
+}
