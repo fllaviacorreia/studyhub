@@ -44,7 +44,7 @@ App Router (UI, Route Handlers, Server Actions)
 
 ## Autorização
 
-Auth.js resolve a sessão; a DAL recebe o ator derivado dela, nunca do corpo; cada consulta privada inclui `ownerId`, `userId` ou associação. Buscar só pelo ID e verificar depois não é aceito.
+Auth.js resolve a sessão; nesta fundação, cadastro local usa credenciais com hash BCrypt e sessão JWT em cookie seguro. A DAL recebe o ator derivado da sessão, nunca do corpo; cada consulta privada inclui `ownerId`, `userId` ou associação. Buscar só pelo ID e verificar depois não é aceito. O modelo de contas e sessões persistidas permanece disponível para provedores futuros, sem habilitá-los prematuramente.
 
 | Recurso | Leitura | Escrita | Publicação |
 | --- | --- | --- | --- |
