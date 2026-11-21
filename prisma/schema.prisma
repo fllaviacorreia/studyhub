@@ -26,6 +26,11 @@ enum ObjectiveStatus {
   ARCHIVED
 }
 
+enum StudyAreaStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 enum ObjectiveMemberRole {
   OWNER
   EDITOR
@@ -150,18 +155,21 @@ model VerificationToken {
 }
 
 model StudyArea {
-  id          String      @id @default(uuid()) @db.Uuid
-  ownerId     String      @db.Uuid
-  name        String      @db.VarChar(120)
-  description String?     @db.Text
-  color       String?     @db.VarChar(20)
+  id          String          @id @default(uuid()) @db.Uuid
+  ownerId     String          @db.Uuid
+  name        String          @db.VarChar(120)
+  description String?         @db.Text
+  color       String?         @db.VarChar(20)
+  icon        String?         @db.VarChar(40)
+  status      StudyAreaStatus @default(ACTIVE)
   archivedAt  DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  owner       User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  owner       User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   objectives  Objective[]
 
   @@unique([ownerId, name])
+  @@index([ownerId, status])
   @@index([ownerId, archivedAt])
 }
 
@@ -201,6 +209,7 @@ model Objective {
   sessions    StudySession[]
 
   @@index([ownerId, status])
+  @@index([ownerId, studyAreaId, status])
   @@index([deadline])
 }
 

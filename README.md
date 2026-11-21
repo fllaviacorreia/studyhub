@@ -2,7 +2,7 @@
 
 Plataforma web multiusuário e multiobjetivo para organizar estudos, editais, conteúdos, questões, planejamento e evolução. SEFAZ-BA e ANPD são apenas exemplos de uso.
 
-O projeto está na fase de fundação funcional, com PostgreSQL, Prisma, cadastro e autenticação local via Auth.js, área privada e health check. Consulte [a arquitetura](docs/architecture.md) e [o plano incremental](docs/implementation-plan.md).
+O projeto possui fundação funcional com PostgreSQL, Prisma e autenticação local via Auth.js, além do gerenciamento privado de áreas e objetivos de estudo e dashboard persistido. Consulte [a arquitetura](docs/architecture.md) e [o plano incremental](docs/implementation-plan.md).
 
 ## Desenvolvimento
 
@@ -19,6 +19,8 @@ npm run dev
 ```
 
 A aplicação estará em `http://localhost:3000`. O health check do banco está em `GET /api/v1/health`.
+
+Após entrar, use `/app/areas` e `/app/objetivos`. A API autenticada está em `GET/POST /api/v1/study-areas`, `GET/PATCH/DELETE /api/v1/study-areas/:id`, `GET/POST /api/v1/study-goals` e `GET/PATCH/DELETE /api/v1/study-goals/:id`.
 
 ## Variáveis de ambiente
 
