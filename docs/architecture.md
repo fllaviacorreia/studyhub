@@ -41,6 +41,8 @@ App Router (UI, Route Handlers, Server Actions)
 - `manualLock` preserva edição humana; `generationKey` dá idempotência; `supersedesId` registra reprogramação.
 - Conteúdo importado/IA começa em rascunho ou revisão e requer curadoria para publicação.
 - Prioridade 1–5 e intervalos de disponibilidade terão `CHECK`s na primeira migração.
+- Áreas possuem estado explícito `ACTIVE`/`ARCHIVED`; objetivos preservam quatro estados. Arquivar mantém vínculos e restaura o estado operacional sem apagar histórico.
+- Exclusão física de área é bloqueada quando existem objetivos vinculados. Objetivos com planos ou sessões também não são removidos fisicamente.
 
 ## Autorização
 
@@ -64,8 +66,8 @@ Route Handlers ficam em `/api/v1`; Server Actions adaptam os mesmos casos de uso
 | --- | --- |
 | `GET/POST /api/v1/study-areas` | escopo da sessão |
 | `PATCH/DELETE /api/v1/study-areas/:id` | owner; arquiva com histórico |
-| `GET/POST /api/v1/objectives` | tipo/área visíveis ao ator |
-| `GET/PATCH /api/v1/objectives/:id` | viewer lê, editor edita |
+| `GET/POST /api/v1/study-goals` | objetivos do proprietário; área validada no mesmo escopo |
+| `GET/PATCH/DELETE /api/v1/study-goals/:id` | proprietário; exclusão preserva dependências históricas |
 | `POST /api/v1/objectives/:id/archive` | owner/editor; idempotente |
 | `GET /api/v1/catalog/subjects` | publicados, salvo curadoria |
 | `POST /api/v1/notices/:id/versions` | curador cria rascunho |

@@ -15,7 +15,9 @@ export default async function PrivateLayout({ children }: { children: React.Reac
       <aside className="hidden border-r border-slate-200 bg-slate-950 p-5 text-white lg:flex lg:flex-col">
         <Link href="/app" className="px-3 text-xl font-bold">StudyHub</Link>
         <nav className="mt-10 space-y-2" aria-label="Navegação principal">
-          <Link href="/app" aria-current="page" className="flex rounded-xl bg-white/10 px-3 py-3 font-medium">Visão geral</Link>
+          <Link href="/app" className="flex rounded-xl px-3 py-3 font-medium hover:bg-white/10">Visão geral</Link>
+          <Link href="/app/areas" className="flex rounded-xl px-3 py-3 font-medium hover:bg-white/10">Minhas áreas</Link>
+          <Link href="/app/objetivos" className="flex rounded-xl px-3 py-3 font-medium hover:bg-white/10">Objetivos</Link>
         </nav>
         <p className="mt-auto px-3 text-xs leading-5 text-slate-400">Novos recursos serão liberados por etapas, sem comprometer seus dados.</p>
       </aside>
@@ -31,7 +33,7 @@ export default async function PrivateLayout({ children }: { children: React.Reac
               <form action={logoutAction}><button className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold hover:bg-slate-50">Sair</button></form>
             </div>
           </div>
-          <nav className="flex border-t border-slate-100 px-5 py-2 lg:hidden" aria-label="Navegação móvel"><Link href="/app" aria-current="page" className="rounded-lg bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800">Visão geral</Link></nav>
+          <nav className="flex gap-1 overflow-x-auto border-t border-slate-100 px-5 py-2 lg:hidden" aria-label="Navegação móvel"><Link href="/app" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold hover:bg-teal-50">Visão geral</Link><Link href="/app/areas" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold hover:bg-teal-50">Áreas</Link><Link href="/app/objetivos" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold hover:bg-teal-50">Objetivos</Link></nav>
         </header>
         <main className="px-5 py-8 sm:px-8 lg:px-10">{children}</main>
       </div>
