@@ -144,8 +144,14 @@ export const personalOrganizationRepository: OrganizationRepository = {
     return this.getObjective(actorId, id);
   },
   async deleteObjective(actorId, id) {
-    const result = await prisma.objective.deleteMany({ where: { id, ownerId: actorId, plans: { none: {} }, sessions: { none: {} } } });
-    return result.count > 0;
+    const objective = await prisma.objective.findFirst({
+      where: { id, ownerId: actorId },
+      select: { _count: { select: { plans: true, sessions: true } } },
+    });
+    if (!objective) return "not_found";
+    if (objective._count.plans || objective._count.sessions) return "has_history";
+    await prisma.objective.deleteMany({ where: { id, ownerId: actorId } });
+    return "deleted";
   },
   async dashboard(actorId) {
     const [activeAreas, activeObjectives, withTargetDate, priorities] = await Promise.all([

@@ -14,7 +14,7 @@ function repository(overrides: Partial<OrganizationRepository> = {}): Organizati
     getObjective: vi.fn().mockResolvedValue(null),
     createObjective: vi.fn().mockResolvedValue(null),
     updateObjective: vi.fn().mockResolvedValue(null),
-    deleteObjective: vi.fn().mockResolvedValue(false),
+    deleteObjective: vi.fn().mockResolvedValue("not_found"),
     dashboard: vi.fn().mockResolvedValue({}),
     ...overrides,
   };
@@ -45,7 +45,7 @@ describe("personal organization service", () => {
       createObjective: vi.fn().mockResolvedValue({ id: "goal" }),
       getObjective: vi.fn().mockResolvedValue({ id: "goal" }),
       updateObjective: vi.fn().mockResolvedValue({ id: "goal", title: "Nova meta" }),
-      deleteObjective: vi.fn().mockResolvedValue(true),
+      deleteObjective: vi.fn().mockResolvedValue("deleted"),
     });
     const service = createOrganizationService(repo);
     const input = { studyAreaId: "c7c10b6a-8c51-4af2-b72a-96757cebe9ee", title: "Meta", type: "PERSONAL" as const, priority: 3 };
@@ -78,6 +78,11 @@ describe("personal organization service", () => {
   it("blocks physical deletion of an area with linked goals", async () => {
     const service = createOrganizationService(repository({ deleteArea: vi.fn().mockResolvedValue("has_objectives") }));
     await expect(service.deleteArea("actor", "area")).rejects.toEqual(expect.objectContaining<Partial<OrganizationError>>({ code: "CONFLICT" }));
+  });
+
+  it("blocks physical deletion of a goal with historical records", async () => {
+    const service = createOrganizationService(repository({ deleteObjective: vi.fn().mockResolvedValue("has_history") }));
+    await expect(service.deleteObjective("actor", "goal")).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   it("moves a goal only when the scoped repository accepts the destination", async () => {

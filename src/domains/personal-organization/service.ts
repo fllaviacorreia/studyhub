@@ -16,7 +16,7 @@ export interface OrganizationRepository {
   getObjective(actorId: string, id: string): Promise<unknown | null>;
   createObjective(actorId: string, input: CreateObjectiveInput): Promise<unknown | null>;
   updateObjective(actorId: string, id: string, input: UpdateObjectiveInput): Promise<unknown | null>;
-  deleteObjective(actorId: string, id: string): Promise<boolean>;
+  deleteObjective(actorId: string, id: string): Promise<"deleted" | "not_found" | "has_history">;
   dashboard(actorId: string): Promise<unknown>;
 }
 
@@ -73,8 +73,12 @@ export function createOrganizationService(repository: OrganizationRepository) {
       return objective;
     },
     deleteObjective: async (actorId: string, id: string) => {
-      if (!(await repository.deleteObjective(actorId, id))) {
+      const result = await repository.deleteObjective(actorId, id);
+      if (result === "not_found") {
         throw new OrganizationError("NOT_FOUND", "Objetivo não encontrado.");
+      }
+      if (result === "has_history") {
+        throw new OrganizationError("CONFLICT", "Arquive o objetivo: planos ou sessões de estudo impedem sua exclusão.");
       }
     },
     dashboard: repository.dashboard.bind(repository),
