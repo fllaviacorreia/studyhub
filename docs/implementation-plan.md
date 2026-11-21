@@ -2,13 +2,13 @@
 
 Cada etapa terá branch/commits próprios, migração revisável, testes e documentação.
 
-## 0. Fundação — esta entrega
+## 0. Fundação — concluída
 
-Arquitetura, autorização, riscos, schema Prisma, PostgreSQL local e validação automatizada. Critério: lint, testes, build e `prisma validate` passam.
+Arquitetura, autorização, riscos, schema Prisma, PostgreSQL local, autenticação local, shell público/privado e validação automatizada. Critério: lint, typecheck, testes, build e `prisma validate` passam.
 
 ## 1. Identidade e organização
 
-Auth.js/adapter; DAL e policies; CRUD de áreas, tipos e objetivos; testes de isolamento entre usuários e E2E.
+Provedores adicionais/adapter persistido; DAL e policies; CRUD de áreas, tipos e objetivos; testes de isolamento entre usuários e E2E.
 
 ## 2. Catálogo e edital
 
@@ -32,4 +32,4 @@ Ingestão autorizada, recuperação com citações por versão, tutor/geração 
 
 ## Fora desta entrega
 
-UI completa, upload, OpenAI, engine de cronograma, Auth.js configurado e seed SEFAZ-BA/ANPD. Exemplos entrarão apenas como demonstração.
+UI completa, upload, OpenAI, engine de cronograma e seed SEFAZ-BA/ANPD. Exemplos entrarão apenas como demonstração.

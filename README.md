@@ -2,17 +2,39 @@
 
 Plataforma web multiusuário e multiobjetivo para organizar estudos, editais, conteúdos, questões, planejamento e evolução. SEFAZ-BA e ANPD são apenas exemplos de uso.
 
-O projeto está na fase de fundação. Consulte [a arquitetura](docs/architecture.md) e [o plano incremental](docs/implementation-plan.md).
+O projeto está na fase de fundação funcional, com PostgreSQL, Prisma, cadastro e autenticação local via Auth.js, área privada e health check. Consulte [a arquitetura](docs/architecture.md) e [o plano incremental](docs/implementation-plan.md).
 
 ## Desenvolvimento
 
-Copie `.env.example` para `.env`, inicie o PostgreSQL e prepare o Prisma:
+Requisitos: Node.js 20+, npm e Docker com Compose.
+
+Copie `.env.example` para `.env`, substitua `AUTH_SECRET` por um segredo aleatório e prepare o ambiente:
 
 ```bash
 docker compose up -d postgres
 npm install
 npm run db:generate
+npm run db:migrate:deploy
 npm run dev
+```
+
+A aplicação estará em `http://localhost:3000`. O health check do banco está em `GET /api/v1/health`.
+
+## Variáveis de ambiente
+
+| Variável | Uso | Exposição |
+| --- | --- | --- |
+| `DATABASE_URL` | conexão PostgreSQL usada somente pelo Prisma | backend |
+| `AUTH_SECRET` | assinatura e criptografia da sessão Auth.js | backend |
+
+Nenhuma variável desta entrega usa o prefixo `NEXT_PUBLIC_`.
+
+## Banco e migrations
+
+```bash
+npm run db:validate         # valida o schema
+npm run db:migrate          # cria/aplica migrations no desenvolvimento
+npm run db:migrate:deploy   # aplica migrations existentes
 ```
 
 Validação local:
@@ -20,3 +42,5 @@ Validação local:
 ```bash
 npm run check
 ```
+
+O comando executa validação do Prisma, lint, typecheck, testes e build de produção.
