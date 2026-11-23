@@ -44,6 +44,27 @@ enum CatalogStatus {
   ARCHIVED
 }
 
+enum ExaminationStatus {
+  PLANNED
+  AUTHORIZED
+  BOARD_DEFINED
+  NOTICE_PUBLISHED
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  EXAM_SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum NoticeDocumentType {
+  OPENING
+  AMENDMENT
+  RECTIFICATION
+  ANNOUNCEMENT
+  OTHER
+}
+
 enum MaterialKind {
   NOTE
   ARTICLE
@@ -187,30 +208,34 @@ model ObjectiveType {
 }
 
 model Objective {
-  id          String               @id @default(uuid()) @db.Uuid
-  ownerId     String               @db.Uuid
-  studyAreaId String?              @db.Uuid
-  typeId      String               @db.Uuid
-  name        String               @db.VarChar(160)
-  description String?              @db.Text
-  priority    Int                  @default(3) @db.SmallInt
-  deadline    DateTime?            @db.Date
-  status      ObjectiveStatus      @default(ACTIVE)
-  archivedAt  DateTime?
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-  owner       User                 @relation("ObjectiveOwner", fields: [ownerId], references: [id], onDelete: Restrict)
-  studyArea   StudyArea?           @relation(fields: [studyAreaId], references: [id], onDelete: SetNull)
-  type        ObjectiveType        @relation(fields: [typeId], references: [id], onDelete: Restrict)
-  members     ObjectiveMember[]
-  notices     ObjectiveNotice[]
-  subjects    ObjectiveSubject[]
-  plans       StudyPlanObjective[]
-  sessions    StudySession[]
+  id            String               @id @default(uuid()) @db.Uuid
+  ownerId       String               @db.Uuid
+  studyAreaId   String?              @db.Uuid
+  typeId        String               @db.Uuid
+  name          String               @db.VarChar(160)
+  description   String?              @db.Text
+  priority      Int                  @default(3) @db.SmallInt
+  deadline      DateTime?            @db.Date
+  status        ObjectiveStatus      @default(ACTIVE)
+  archivedAt    DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  owner         User                 @relation("ObjectiveOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  studyArea     StudyArea?           @relation(fields: [studyAreaId], references: [id], onDelete: SetNull)
+  type          ObjectiveType        @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  members       ObjectiveMember[]
+  notices       ObjectiveNotice[]
+  subjects      ObjectiveSubject[]
+  plans         StudyPlanObjective[]
+  sessions      StudySession[]
+  examinationId String?              @db.Uuid
+  examination   Examination?         @relation(fields: [examinationId], references: [id], onDelete: SetNull)
+  positions     ObjectivePosition[]
 
   @@index([ownerId, status])
   @@index([ownerId, studyAreaId, status])
   @@index([deadline])
+  @@index([ownerId, examinationId])
 }
 
 model ObjectiveMember {
@@ -226,92 +251,173 @@ model ObjectiveMember {
 }
 
 model Organization {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @db.VarChar(160)
-  acronym   String?  @db.VarChar(30)
-  country   String   @default("BR") @db.Char(2)
-  createdAt DateTime @default(now())
-  exams     Exam[]
+  id                   String         @id @default(uuid()) @db.Uuid
+  parentOrganizationId String?        @db.Uuid
+  name                 String         @db.VarChar(160)
+  normalizedName       String         @db.VarChar(180)
+  acronym              String?        @db.VarChar(30)
+  description          String?        @db.Text
+  website              String?
+  country              String         @default("BR") @db.Char(2)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  parent               Organization?  @relation("OrganizationTree", fields: [parentOrganizationId], references: [id], onDelete: Restrict)
+  children             Organization[] @relation("OrganizationTree")
+  examinations         Examination[]
 
-  @@unique([country, name])
+  @@unique([country, normalizedName])
+  @@index([parentOrganizationId])
 }
 
 model ExamBoard {
-  id        String     @id @default(uuid()) @db.Uuid
-  name      String     @db.VarChar(160)
-  acronym   String?    @db.VarChar(30)
-  createdAt DateTime   @default(now())
-  notices   Notice[]
-  questions Question[]
+  id             String        @id @default(uuid()) @db.Uuid
+  name           String        @db.VarChar(160)
+  normalizedName String        @db.VarChar(180)
+  acronym        String?       @db.VarChar(30)
+  website        String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  examinations   Examination[]
+  questions      Question[]
 
-  @@unique([name])
+  @@unique([normalizedName])
 }
 
-model Exam {
-  id             String         @id @default(uuid()) @db.Uuid
-  organizationId String         @db.Uuid
-  name           String         @db.VarChar(180)
-  year           Int?
-  status         CatalogStatus  @default(DRAFT)
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  positions      ExamPosition[]
-  notices        Notice[]
+model Examination {
+  id                  String            @id @default(uuid()) @db.Uuid
+  organizationId      String            @db.Uuid
+  examBoardId         String?           @db.Uuid
+  title               String            @map("name") @db.VarChar(180)
+  description         String?           @db.Text
+  year                Int?
+  status              ExaminationStatus @default(PLANNED)
+  publicationStatus   CatalogStatus     @default(DRAFT)
+  registrationStartAt DateTime?
+  registrationEndAt   DateTime?
+  examDate            DateTime?
+  officialUrl         String?
+  sourceReference     String?           @db.Text
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  organization        Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  examBoard           ExamBoard?        @relation(fields: [examBoardId], references: [id], onDelete: SetNull)
+  positions           Position[]
+  notices             Notice[]
+  syllabuses          Syllabus[]
+  objectives          Objective[]
 
-  @@unique([organizationId, name, year])
+  @@unique([organizationId, title, year])
+  @@index([publicationStatus, status, year])
+  @@index([examBoardId])
+  @@map("Exam")
 }
 
-model ExamPosition {
-  id              String           @id @default(uuid()) @db.Uuid
-  examId          String           @db.Uuid
-  name            String           @db.VarChar(160)
-  specialty       String?          @db.VarChar(160)
-  requirements    String?          @db.Text
-  exam            Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+model Position {
+  id              String              @id @default(uuid()) @db.Uuid
+  examinationId   String              @map("examId") @db.Uuid
+  title           String              @map("name") @db.VarChar(160)
+  description     String?             @db.Text
+  educationLevel  String?             @db.VarChar(120)
+  requirements    String?             @db.Text
+  vacancies       Int?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  examination     Examination         @relation(fields: [examinationId], references: [id], onDelete: Cascade)
+  specializations Specialization[]
   noticePositions NoticePosition[]
+  syllabuses      Syllabus[]
+  objectives      ObjectivePosition[]
 
-  @@unique([examId, name, specialty])
+  @@unique([examinationId, title])
+  @@map("ExamPosition")
+}
+
+model Specialization {
+  id          String              @id @default(uuid()) @db.Uuid
+  positionId  String              @db.Uuid
+  name        String              @db.VarChar(160)
+  description String?             @db.Text
+  vacancies   Int?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  position    Position            @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  syllabuses  Syllabus[]
+  objectives  ObjectivePosition[]
+
+  @@unique([positionId, name])
 }
 
 model Notice {
-  id          String            @id @default(uuid()) @db.Uuid
-  examId      String            @db.Uuid
-  boardId     String?           @db.Uuid
-  title       String            @db.VarChar(200)
-  status      CatalogStatus     @default(DRAFT)
-  publishedAt DateTime?
-  exam        Exam              @relation(fields: [examId], references: [id], onDelete: Restrict)
-  board       ExamBoard?        @relation(fields: [boardId], references: [id], onDelete: SetNull)
-  versions    NoticeVersion[]
-  positions   NoticePosition[]
-  objectives  ObjectiveNotice[]
+  id               String             @id @default(uuid()) @db.Uuid
+  examinationId    String             @map("examId") @db.Uuid
+  originalNoticeId String?            @db.Uuid
+  title            String             @db.VarChar(200)
+  noticeNumber     String?            @db.VarChar(80)
+  documentType     NoticeDocumentType @default(OTHER)
+  status           CatalogStatus      @default(DRAFT)
+  publicationDate  DateTime?          @map("publishedAt")
+  officialUrl      String?
+  filePath         String?
+  sourceReference  String?            @db.Text
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  examination      Examination        @relation(fields: [examinationId], references: [id], onDelete: Restrict)
+  originalNotice   Notice?            @relation("NoticeCorrections", fields: [originalNoticeId], references: [id], onDelete: Restrict)
+  corrections      Notice[]           @relation("NoticeCorrections")
+  versions         NoticeVersion[]
+  positions        NoticePosition[]
+  objectives       ObjectiveNotice[]
+  syllabuses       Syllabus[]
+
+  @@index([examinationId, status, publicationDate])
+  @@index([originalNoticeId])
 }
 
 model NoticeVersion {
-  id             String              @id @default(uuid()) @db.Uuid
-  noticeId       String              @db.Uuid
-  version        Int
-  status         CatalogStatus       @default(DRAFT)
-  sourceUrl      String?
-  sourceFileKey  String?
-  extractionData Json?
-  reviewerId     String?             @db.Uuid
-  reviewedAt     DateTime?
-  createdAt      DateTime            @default(now())
-  notice         Notice              @relation(fields: [noticeId], references: [id], onDelete: Cascade)
-  subjectRules   NoticeSubjectRule[]
+  id                String              @id @default(uuid()) @db.Uuid
+  noticeId          String              @db.Uuid
+  version           Int
+  status            CatalogStatus       @default(DRAFT)
+  sourceUrl         String?
+  sourceFileKey     String?
+  extractionData    Json?
+  reviewerId        String?             @db.Uuid
+  reviewedAt        DateTime?
+  createdAt         DateTime            @default(now())
+  documentUrl       String?
+  contentHash       String?             @db.VarChar(128)
+  publishedAt       DateTime?
+  changeDescription String?             @db.Text
+  notice            Notice              @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  subjectRules      NoticeSubjectRule[]
 
   @@unique([noticeId, version])
   @@index([status])
 }
 
 model NoticePosition {
-  noticeId   String       @db.Uuid
-  positionId String       @db.Uuid
+  noticeId   String   @db.Uuid
+  positionId String   @db.Uuid
   vacancies  Int?
-  notice     Notice       @relation(fields: [noticeId], references: [id], onDelete: Cascade)
-  position   ExamPosition @relation(fields: [positionId], references: [id], onDelete: Restrict)
+  notice     Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  position   Position @relation(fields: [positionId], references: [id], onDelete: Restrict)
 
   @@id([noticeId, positionId])
+}
+
+model ObjectivePosition {
+  id               String          @id @default(uuid()) @db.Uuid
+  objectiveId      String          @db.Uuid
+  positionId       String          @db.Uuid
+  specializationId String?         @db.Uuid
+  createdAt        DateTime        @default(now())
+  objective        Objective       @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  position         Position        @relation(fields: [positionId], references: [id], onDelete: Restrict)
+  specialization   Specialization? @relation(fields: [specializationId], references: [id], onDelete: Restrict)
+
+  @@unique([objectiveId, positionId, specializationId])
+  @@index([positionId])
+  @@index([specializationId])
 }
 
 model ObjectiveNotice {
@@ -324,37 +430,87 @@ model ObjectiveNotice {
 }
 
 model Subject {
-  id          String              @id @default(uuid()) @db.Uuid
-  name        String              @db.VarChar(160)
-  slug        String              @unique @db.VarChar(180)
-  description String?             @db.Text
-  status      CatalogStatus       @default(DRAFT)
-  topics      Topic[]
-  objectives  ObjectiveSubject[]
-  noticeRules NoticeSubjectRule[]
+  id            String              @id @default(uuid()) @db.Uuid
+  name          String              @db.VarChar(160)
+  slug          String              @unique @db.VarChar(180)
+  description   String?             @db.Text
+  status        CatalogStatus       @default(DRAFT)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  topics        Topic[]
+  objectives    ObjectiveSubject[]
+  noticeRules   NoticeSubjectRule[]
+  syllabusItems SyllabusItem[]
 }
 
 model Topic {
-  id          String               @id @default(uuid()) @db.Uuid
-  subjectId   String               @db.Uuid
-  parentId    String?              @db.Uuid
-  name        String               @db.VarChar(200)
-  slug        String               @db.VarChar(220)
-  description String?              @db.Text
-  position    Int                  @default(0)
-  subject     Subject              @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  parent      Topic?               @relation("TopicTree", fields: [parentId], references: [id], onDelete: Restrict)
-  children    Topic[]              @relation("TopicTree")
-  materials   MaterialTopic[]
-  questions   QuestionTopic[]
-  noticeRules NoticeSubjectRule[]
-  planTasks   PlanTask[]
-  sessions    StudySession[]
-  reviewItems ReviewItem[]
-  errors      ErrorNotebookEntry[]
+  id            String               @id @default(uuid()) @db.Uuid
+  subjectId     String               @db.Uuid
+  parentId      String?              @db.Uuid
+  name          String               @db.VarChar(200)
+  slug          String               @db.VarChar(220)
+  description   String?              @db.Text
+  position      Int                  @default(0)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  subject       Subject              @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  parent        Topic?               @relation("TopicTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children      Topic[]              @relation("TopicTree")
+  materials     MaterialTopic[]
+  questions     QuestionTopic[]
+  noticeRules   NoticeSubjectRule[]
+  planTasks     PlanTask[]
+  sessions      StudySession[]
+  reviewItems   ReviewItem[]
+  errors        ErrorNotebookEntry[]
+  syllabusItems SyllabusItem[]
 
   @@unique([subjectId, parentId, slug])
   @@index([subjectId, parentId, position])
+}
+
+model Syllabus {
+  id               String          @id @default(uuid()) @db.Uuid
+  examinationId    String          @db.Uuid
+  noticeId         String?         @db.Uuid
+  positionId       String?         @db.Uuid
+  specializationId String?         @db.Uuid
+  title            String          @db.VarChar(200)
+  status           CatalogStatus   @default(DRAFT)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  examination      Examination     @relation(fields: [examinationId], references: [id], onDelete: Restrict)
+  notice           Notice?         @relation(fields: [noticeId], references: [id], onDelete: SetNull)
+  position         Position?       @relation(fields: [positionId], references: [id], onDelete: Restrict)
+  specialization   Specialization? @relation(fields: [specializationId], references: [id], onDelete: Restrict)
+  items            SyllabusItem[]
+
+  @@index([examinationId, status])
+  @@index([positionId, specializationId])
+}
+
+model SyllabusItem {
+  id                String         @id @default(uuid()) @db.Uuid
+  syllabusId        String         @db.Uuid
+  parentItemId      String?        @db.Uuid
+  subjectId         String?        @db.Uuid
+  topicId           String?        @db.Uuid
+  title             String         @db.VarChar(300)
+  description       String?        @db.Text
+  order             Int            @default(0)
+  weight            Decimal?       @db.Decimal(8, 3)
+  numberOfQuestions Int?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  syllabus          Syllabus       @relation(fields: [syllabusId], references: [id], onDelete: Cascade)
+  parent            SyllabusItem?  @relation("SyllabusTree", fields: [parentItemId], references: [id], onDelete: Restrict)
+  children          SyllabusItem[] @relation("SyllabusTree")
+  subject           Subject?       @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  topic             Topic?         @relation(fields: [topicId], references: [id], onDelete: Restrict)
+
+  @@unique([syllabusId, parentItemId, order])
+  @@index([syllabusId, parentItemId, order])
+  @@index([subjectId, topicId])
 }
 
 model ObjectiveSubject {
