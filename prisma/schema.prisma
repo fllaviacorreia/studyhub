@@ -193,10 +193,44 @@ enum SessionKind {
   MOCK_EXAM
 }
 
-enum ReviewStatus {
-  SCHEDULED
+enum ReviewScheduleStatus {
+  ACTIVE
+  PAUSED
   COMPLETED
-  SKIPPED
+  ARCHIVED
+}
+
+enum ReviewRating {
+  AGAIN
+  HARD
+  GOOD
+  EASY
+}
+
+enum ErrorNotebookStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  ARCHIVED
+}
+
+enum MockExamStatus {
+  DRAFT
+  READY
+  ARCHIVED
+}
+
+enum MockExamAttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  FINISHED
+  EXPIRED
+  ABANDONED
+}
+
+enum ScoringStrategy {
+  SIMPLE
+  WEIGHTED_BY_SECTION
 }
 
 model User {
@@ -220,8 +254,11 @@ model User {
   studyPlans       StudyPlan[]
   studySessions    StudySession[]
   attempts         QuestionAttempt[]
-  reviewItems      ReviewItem[]
+  reviewSchedules  ReviewSchedule[]
+  reviewAttempts   ReviewAttempt[]
   errorEntries     ErrorNotebookEntry[]
+  mockExams        MockExam[]
+  mockExamAttempts MockExamAttempt[]
   learningProgress LearningProgress[]
   materialVersions MaterialVersion[]    @relation("MaterialVersionCreator")
   questionVersions QuestionVersion[]    @relation("QuestionVersionCreator")
@@ -321,6 +358,7 @@ model Objective {
   examination   Examination?              @relation(fields: [examinationId], references: [id], onDelete: SetNull)
   positions     ObjectivePosition[]
   planTopics    StudyPlanTopicObjective[]
+  mockExams     MockExam[]
 
   @@index([ownerId, status])
   @@index([ownerId, studyAreaId, status])
@@ -396,6 +434,7 @@ model Examination {
   syllabuses          Syllabus[]
   objectives          Objective[]
   questions           Question[]
+  mockExams           MockExam[]
 
   @@unique([organizationId, title, year])
   @@index([publicationStatus, status, year])
@@ -419,6 +458,7 @@ model Position {
   syllabuses      Syllabus[]
   objectives      ObjectivePosition[]
   questions       Question[]
+  mockExams       MockExam[]
 
   @@unique([examinationId, title])
   @@map("ExamPosition")
@@ -522,41 +562,42 @@ model ObjectiveNotice {
 }
 
 model Subject {
-  id            String              @id @default(uuid()) @db.Uuid
-  name          String              @db.VarChar(160)
-  slug          String              @unique @db.VarChar(180)
-  description   String?             @db.Text
-  status        CatalogStatus       @default(DRAFT)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  topics        Topic[]
-  objectives    ObjectiveSubject[]
-  noticeRules   NoticeSubjectRule[]
-  syllabusItems SyllabusItem[]
+  id               String              @id @default(uuid()) @db.Uuid
+  name             String              @db.VarChar(160)
+  slug             String              @unique @db.VarChar(180)
+  description      String?             @db.Text
+  status           CatalogStatus       @default(DRAFT)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  topics           Topic[]
+  objectives       ObjectiveSubject[]
+  noticeRules      NoticeSubjectRule[]
+  syllabusItems    SyllabusItem[]
+  mockExamSections MockExamSection[]
 }
 
 model Topic {
-  id            String               @id @default(uuid()) @db.Uuid
-  subjectId     String               @db.Uuid
-  parentId      String?              @db.Uuid
-  name          String               @db.VarChar(200)
-  slug          String               @db.VarChar(220)
-  description   String?              @db.Text
-  position      Int                  @default(0)
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  subject       Subject              @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  parent        Topic?               @relation("TopicTree", fields: [parentId], references: [id], onDelete: Restrict)
-  children      Topic[]              @relation("TopicTree")
-  materials     MaterialTopic[]
-  questions     QuestionTopic[]
-  noticeRules   NoticeSubjectRule[]
-  planTasks     PlanTask[]
-  planTopics    StudyPlanTopic[]
-  sessions      StudySession[]
-  reviewItems   ReviewItem[]
-  errors        ErrorNotebookEntry[]
-  syllabusItems SyllabusItem[]
+  id              String               @id @default(uuid()) @db.Uuid
+  subjectId       String               @db.Uuid
+  parentId        String?              @db.Uuid
+  name            String               @db.VarChar(200)
+  slug            String               @db.VarChar(220)
+  description     String?              @db.Text
+  position        Int                  @default(0)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  subject         Subject              @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  parent          Topic?               @relation("TopicTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children        Topic[]              @relation("TopicTree")
+  materials       MaterialTopic[]
+  questions       QuestionTopic[]
+  noticeRules     NoticeSubjectRule[]
+  planTasks       PlanTask[]
+  planTopics      StudyPlanTopic[]
+  sessions        StudySession[]
+  reviewSchedules ReviewSchedule[]
+  errors          ErrorNotebookEntry[]
+  syllabusItems   SyllabusItem[]
 
   @@unique([subjectId, parentId, slug])
   @@index([subjectId, parentId, position])
@@ -912,6 +953,8 @@ model PlanTask {
   supersedesId     String?           @db.Uuid
   materialId       String?           @db.Uuid
   exerciseListId   String?           @db.Uuid
+  reviewScheduleId String?           @db.Uuid
+  mockExamId       String?           @db.Uuid
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   completedAt      DateTime?
@@ -923,6 +966,8 @@ model PlanTask {
   sessions         StudySession[]
   material         Material?         @relation(fields: [materialId], references: [id], onDelete: SetNull)
   exerciseList     ExerciseList?     @relation(fields: [exerciseListId], references: [id], onDelete: SetNull)
+  reviewSchedule   ReviewSchedule?   @relation(fields: [reviewScheduleId], references: [id], onDelete: SetNull)
+  mockExam         MockExam?         @relation(fields: [mockExamId], references: [id], onDelete: SetNull)
   questionSessions QuestionSession[]
 
   @@unique([planId, generationKey])
@@ -983,23 +1028,24 @@ model PlanningPreview {
 }
 
 model QuestionAttempt {
-  id                  String          @id @default(uuid()) @db.Uuid
-  userId              String          @db.Uuid
-  questionId          String          @db.Uuid
-  sessionId           String?         @db.Uuid
-  questionSessionId   String          @db.Uuid
-  questionVersionId   String          @db.Uuid
-  idempotencyKey      String          @db.VarChar(120)
-  selectedOptionIds   String[]        @db.Uuid
+  id                  String              @id @default(uuid()) @db.Uuid
+  userId              String              @db.Uuid
+  questionId          String              @db.Uuid
+  sessionId           String?             @db.Uuid
+  questionSessionId   String              @db.Uuid
+  questionVersionId   String              @db.Uuid
+  idempotencyKey      String              @db.VarChar(120)
+  selectedOptionIds   String[]            @db.Uuid
   isCorrect           Boolean
-  answeredAt          DateTime        @default(now())
+  answeredAt          DateTime            @default(now())
   responseTimeMs      Int?
-  explanationRevealed Boolean         @default(false)
-  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  question            Question        @relation(fields: [questionId], references: [id], onDelete: Restrict)
-  session             StudySession?   @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  questionSession     QuestionSession @relation(fields: [questionSessionId], references: [id], onDelete: Restrict)
-  questionVersion     QuestionVersion @relation(fields: [questionVersionId], references: [id], onDelete: Restrict)
+  explanationRevealed Boolean             @default(false)
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question            Question            @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  session             StudySession?       @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  questionSession     QuestionSession     @relation(fields: [questionSessionId], references: [id], onDelete: Restrict)
+  questionVersion     QuestionVersion     @relation(fields: [questionVersionId], references: [id], onDelete: Restrict)
+  errorNotebookSource ErrorNotebookEntry? @relation("ErrorSourceAttempt")
 
   @@unique([questionSessionId, questionId])
   @@unique([userId, idempotencyKey])
@@ -1037,73 +1083,177 @@ model ExerciseListQuestion {
 }
 
 model QuestionSession {
-  id             String                @id @default(uuid()) @db.Uuid
-  userId         String                @db.Uuid
-  exerciseListId String?               @db.Uuid
-  studyTaskId    String?               @db.Uuid
-  studySessionId String?               @db.Uuid
-  idempotencyKey String                @db.VarChar(120)
-  status         QuestionSessionStatus @default(IN_PROGRESS)
-  mode           ExerciseMode
-  startedAt      DateTime              @default(now())
-  finishedAt     DateTime?
-  totalQuestions Int
-  correctAnswers Int                   @default(0)
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
-  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exerciseList   ExerciseList?         @relation(fields: [exerciseListId], references: [id], onDelete: Restrict)
-  studyTask      PlanTask?             @relation(fields: [studyTaskId], references: [id], onDelete: SetNull)
-  studySession   StudySession?         @relation(fields: [studySessionId], references: [id], onDelete: SetNull)
-  items          QuestionSessionItem[]
-  attempts       QuestionAttempt[]
+  id              String                @id @default(uuid()) @db.Uuid
+  userId          String                @db.Uuid
+  exerciseListId  String?               @db.Uuid
+  studyTaskId     String?               @db.Uuid
+  studySessionId  String?               @db.Uuid
+  idempotencyKey  String                @db.VarChar(120)
+  status          QuestionSessionStatus @default(IN_PROGRESS)
+  mode            ExerciseMode
+  startedAt       DateTime              @default(now())
+  finishedAt      DateTime?
+  totalQuestions  Int
+  correctAnswers  Int                   @default(0)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseList    ExerciseList?         @relation(fields: [exerciseListId], references: [id], onDelete: Restrict)
+  studyTask       PlanTask?             @relation(fields: [studyTaskId], references: [id], onDelete: SetNull)
+  studySession    StudySession?         @relation(fields: [studySessionId], references: [id], onDelete: SetNull)
+  items           QuestionSessionItem[]
+  attempts        QuestionAttempt[]
+  mockExamAttempt MockExamAttempt?
 
   @@unique([userId, idempotencyKey])
   @@index([userId, status, startedAt])
 }
 
 model QuestionSessionItem {
-  id                String          @id @default(uuid()) @db.Uuid
-  questionSessionId String          @db.Uuid
-  questionId        String          @db.Uuid
-  questionVersionId String          @db.Uuid
+  id                String           @id @default(uuid()) @db.Uuid
+  questionSessionId String           @db.Uuid
+  questionId        String           @db.Uuid
+  questionVersionId String           @db.Uuid
   position          Int
-  questionSession   QuestionSession @relation(fields: [questionSessionId], references: [id], onDelete: Cascade)
-  question          Question        @relation(fields: [questionId], references: [id], onDelete: Restrict)
-  questionVersion   QuestionVersion @relation(fields: [questionVersionId], references: [id], onDelete: Restrict)
+  mockExamSectionId String?          @db.Uuid
+  questionSession   QuestionSession  @relation(fields: [questionSessionId], references: [id], onDelete: Cascade)
+  question          Question         @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  questionVersion   QuestionVersion  @relation(fields: [questionVersionId], references: [id], onDelete: Restrict)
+  mockExamSection   MockExamSection? @relation(fields: [mockExamSectionId], references: [id], onDelete: Restrict)
 
   @@unique([questionSessionId, questionId])
   @@unique([questionSessionId, position])
 }
 
-model ReviewItem {
-  id             String       @id @default(uuid()) @db.Uuid
-  userId         String       @db.Uuid
-  topicId        String       @db.Uuid
-  dueAt          DateTime
-  intervalDays   Int
-  easeFactor     Decimal      @default(2.5) @db.Decimal(5, 2)
-  repetitions    Int          @default(0)
-  status         ReviewStatus @default(SCHEDULED)
+model ReviewSchedule {
+  id             String               @id @default(uuid()) @db.Uuid
+  userId         String               @db.Uuid
+  topicId        String               @db.Uuid
+  status         ReviewScheduleStatus @default(ACTIVE)
+  nextReviewAt   DateTime
   lastReviewedAt DateTime?
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  topic          Topic        @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  reviewCount    Int                  @default(0)
+  lapseCount     Int                  @default(0)
+  stability      Decimal              @default(1) @db.Decimal(10, 3)
+  difficulty     Decimal              @default(5) @db.Decimal(5, 2)
+  intervalDays   Int                  @default(1)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic          Topic                @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  attempts       ReviewAttempt[]
+  tasks          PlanTask[]
 
   @@unique([userId, topicId])
-  @@index([userId, dueAt, status])
+  @@index([userId, status, nextReviewAt])
+  @@index([topicId])
+}
+
+model ReviewAttempt {
+  id                   String         @id @default(uuid()) @db.Uuid
+  reviewScheduleId     String         @db.Uuid
+  userId               String         @db.Uuid
+  rating               ReviewRating
+  reviewedAt           DateTime       @default(now())
+  previousIntervalDays Int
+  nextIntervalDays     Int
+  responseTimeSeconds  Int?
+  notes                String?        @db.Text
+  idempotencyKey       String         @db.VarChar(120)
+  createdAt            DateTime       @default(now())
+  schedule             ReviewSchedule @relation(fields: [reviewScheduleId], references: [id], onDelete: Restrict)
+  user                 User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, idempotencyKey])
+  @@index([reviewScheduleId, reviewedAt])
+  @@index([userId, reviewedAt])
 }
 
 model ErrorNotebookEntry {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @db.Uuid
-  questionId String?   @db.Uuid
-  topicId    String?   @db.Uuid
-  note       String?   @db.Text
-  resolvedAt DateTime?
-  createdAt  DateTime  @default(now())
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  question   Question? @relation(fields: [questionId], references: [id], onDelete: SetNull)
-  topic      Topic?    @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  id              String              @id @default(uuid()) @db.Uuid
+  userId          String              @db.Uuid
+  questionId      String              @db.Uuid
+  topicId         String?             @db.Uuid
+  sourceAttemptId String?             @unique @db.Uuid
+  status          ErrorNotebookStatus @default(OPEN)
+  notes           String?             @db.Text
+  resolvedAt      DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question        Question            @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  topic           Topic?              @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  sourceAttempt   QuestionAttempt?    @relation("ErrorSourceAttempt", fields: [sourceAttemptId], references: [id], onDelete: SetNull)
 
-  @@index([userId, resolvedAt])
+  @@unique([userId, questionId])
+  @@index([userId, status, updatedAt])
+  @@index([userId, topicId])
+}
+
+model MockExam {
+  id               String            @id @default(uuid()) @db.Uuid
+  userId           String            @db.Uuid
+  title            String            @db.VarChar(180)
+  description      String?           @db.Text
+  studyGoalId      String?           @db.Uuid
+  examinationId    String?           @db.Uuid
+  positionId       String?           @db.Uuid
+  durationMinutes  Int?
+  totalQuestions   Int
+  status           MockExamStatus    @default(DRAFT)
+  scoringStrategy  ScoringStrategy   @default(SIMPLE)
+  selectionSeed    String            @db.VarChar(120)
+  selectionFilters Json
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  user             User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  studyGoal        Objective?        @relation(fields: [studyGoalId], references: [id], onDelete: SetNull)
+  examination      Examination?      @relation(fields: [examinationId], references: [id], onDelete: SetNull)
+  position         Position?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  sections         MockExamSection[]
+  attempts         MockExamAttempt[]
+  tasks            PlanTask[]
+
+  @@index([userId, status, createdAt])
+}
+
+model MockExamSection {
+  id            String                @id @default(uuid()) @db.Uuid
+  mockExamId    String                @db.Uuid
+  subjectId     String?               @db.Uuid
+  title         String                @db.VarChar(160)
+  questionCount Int
+  weight        Decimal               @default(1) @db.Decimal(8, 3)
+  order         Int
+  filters       Json?
+  mockExam      MockExam              @relation(fields: [mockExamId], references: [id], onDelete: Cascade)
+  subject       Subject?              @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  sessionItems  QuestionSessionItem[]
+
+  @@unique([mockExamId, order])
+  @@index([subjectId])
+}
+
+model MockExamAttempt {
+  id                String                @id @default(uuid()) @db.Uuid
+  mockExamId        String                @db.Uuid
+  userId            String                @db.Uuid
+  questionSessionId String                @unique @db.Uuid
+  status            MockExamAttemptStatus @default(IN_PROGRESS)
+  startedAt         DateTime              @default(now())
+  deadlineAt        DateTime?
+  submittedAt       DateTime?
+  finishedAt        DateTime?
+  rawScore          Decimal?              @db.Decimal(10, 3)
+  weightedScore     Decimal?              @db.Decimal(10, 3)
+  correctAnswers    Int?
+  totalQuestions    Int
+  resultSnapshot    Json?
+  createdAt         DateTime              @default(now())
+  mockExam          MockExam              @relation(fields: [mockExamId], references: [id], onDelete: Restrict)
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  questionSession   QuestionSession       @relation(fields: [questionSessionId], references: [id], onDelete: Restrict)
+
+  @@index([userId, status, startedAt])
+  @@index([mockExamId, startedAt])
 }
