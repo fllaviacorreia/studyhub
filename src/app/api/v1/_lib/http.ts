@@ -7,6 +7,7 @@ import { PlanningError } from "@/domains/planning/errors";
 import { LearningError } from "@/domains/learning/errors";
 import { ReviewError } from "@/domains/reviews/errors";
 import { MockExamError } from "@/domains/mock-exams/errors";
+import { AIError } from "@/domains/ai/errors";
 import { getSessionActor } from "@/server/dal/session";
 
 export function problem(
@@ -167,6 +168,34 @@ export async function handleApi(
               : "Dados inválidos",
         error.message,
       );
+    }
+    if (error instanceof AIError) {
+      const status =
+        error.code === "NOT_FOUND"
+          ? 404
+          : error.code === "FORBIDDEN"
+            ? 403
+            : error.code === "RATE_LIMITED"
+              ? 429
+              : error.code === "PROVIDER_UNAVAILABLE"
+                ? 503
+                : 422;
+      const response = problem(
+        status,
+        status === 429
+          ? "Limite de uso"
+          : status === 503
+            ? "Tutor indisponível"
+            : status === 403
+              ? "Acesso negado"
+              : status === 404
+                ? "Não encontrado"
+                : "Resposta inválida",
+        error.message,
+      );
+      if (error.retryAfterSeconds)
+        response.headers.set("retry-after", String(error.retryAfterSeconds));
+      return response;
     }
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&

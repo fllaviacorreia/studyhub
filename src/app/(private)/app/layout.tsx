@@ -93,6 +93,12 @@ export default async function PrivateLayout({
           >
             Simulados
           </Link>
+          <Link
+            href="/app/tutor"
+            className="flex rounded-xl px-3 py-3 font-medium hover:bg-white/10"
+          >
+            Tutor inteligente
+          </Link>
         </nav>
         <p className="mt-auto px-3 text-xs leading-5 text-slate-400">
           Novos recursos serão liberados por etapas, sem comprometer seus dados.
@@ -188,6 +194,12 @@ export default async function PrivateLayout({
               className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold hover:bg-teal-50"
             >
               Simulados
+            </Link>
+            <Link
+              href="/app/tutor"
+              className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold hover:bg-teal-50"
+            >
+              Tutor
             </Link>
           </nav>
         </header>
