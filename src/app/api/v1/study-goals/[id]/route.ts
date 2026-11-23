@@ -7,14 +7,26 @@ type Context = { params: Promise<{ id: string }> };
 export async function GET(_: Request, { params }: Context) {
   return handleApi(async () => {
     const [actor, { id }] = await Promise.all([apiActor(), params]);
-    return Response.json({ data: await personalOrganizationService.getObjective(actor.id, id) });
+    return Response.json({
+      data: await personalOrganizationService.getObjective(actor.id, id),
+    });
   });
 }
 
 export async function PATCH(request: Request, { params }: Context) {
   return handleApi(async () => {
-    const [actor, { id }, input] = await Promise.all([apiActor(), params, parseJson(request, updateObjectiveSchema)]);
-    return Response.json({ data: await personalOrganizationService.updateObjective(actor.id, id, input) });
+    const [actor, { id }, input] = await Promise.all([
+      apiActor(),
+      params,
+      parseJson(request, updateObjectiveSchema),
+    ]);
+    return Response.json({
+      data: await personalOrganizationService.updateObjective(
+        actor.id,
+        id,
+        input,
+      ),
+    });
   });
 }
 

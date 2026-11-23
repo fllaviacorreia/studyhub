@@ -18,5 +18,10 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-button, a { transition-duration: 150ms; }
-button { cursor: pointer; }
+button,
+a {
+  transition-duration: 150ms;
+}
+button {
+  cursor: pointer;
+}

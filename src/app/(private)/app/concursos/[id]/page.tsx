@@ -4,13 +4,243 @@ import { CatalogError } from "@/domains/catalog/errors";
 import { catalogService } from "@/server/catalog/service";
 import { requireSessionActor } from "@/server/dal/session";
 
-type Detail = { title: string; description: string | null; year: number | null; status: string; officialUrl: string | null; sourceReference: string | null; registrationStartAt: Date | null; registrationEndAt: Date | null; examDate: Date | null; organization: { name: string; acronym: string | null }; examBoard: { name: string; acronym: string | null } | null; positions: { id: string; title: string; description: string | null; educationLevel: string | null; requirements: string | null; vacancies: number | null; specializations: { id: string; name: string; vacancies: number | null }[] }[]; notices: { id: string; title: string; noticeNumber: string | null; documentType: string; publicationDate: Date | null; officialUrl: string | null; sourceReference: string | null; versions: { id: string; version: number; documentUrl: string | null; changeDescription: string | null }[] }[]; syllabuses: { id: string; title: string; positionId: string | null; specializationId: string | null; items: { id: string; parentItemId: string | null; title: string; order: number; weight: unknown; numberOfQuestions: number | null; subject: { name: string } | null; topic: { name: string } | null }[] }[] };
-const date = (value: Date | null) => value ? new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Bahia" }).format(value) : "Não confirmada";
+type Detail = {
+  title: string;
+  description: string | null;
+  year: number | null;
+  status: string;
+  officialUrl: string | null;
+  sourceReference: string | null;
+  registrationStartAt: Date | null;
+  registrationEndAt: Date | null;
+  examDate: Date | null;
+  organization: { name: string; acronym: string | null };
+  examBoard: { name: string; acronym: string | null } | null;
+  positions: {
+    id: string;
+    title: string;
+    description: string | null;
+    educationLevel: string | null;
+    requirements: string | null;
+    vacancies: number | null;
+    specializations: { id: string; name: string; vacancies: number | null }[];
+  }[];
+  notices: {
+    id: string;
+    title: string;
+    noticeNumber: string | null;
+    documentType: string;
+    publicationDate: Date | null;
+    officialUrl: string | null;
+    sourceReference: string | null;
+    versions: {
+      id: string;
+      version: number;
+      documentUrl: string | null;
+      changeDescription: string | null;
+    }[];
+  }[];
+  syllabuses: {
+    id: string;
+    title: string;
+    positionId: string | null;
+    specializationId: string | null;
+    items: {
+      id: string;
+      parentItemId: string | null;
+      title: string;
+      order: number;
+      weight: unknown;
+      numberOfQuestions: number | null;
+      subject: { name: string } | null;
+      topic: { name: string } | null;
+    }[];
+  }[];
+};
+const date = (value: Date | null) =>
+  value
+    ? new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Bahia" }).format(
+        value,
+      )
+    : "Não confirmada";
 
-export default async function ExaminationDetailPage({ params }: { params: Promise<{ id: string }> }) { const [actor, { id }] = await Promise.all([requireSessionActor(), params]); let exam: Detail; try { exam = await catalogService.getExamination(actor, id) as Detail; } catch (error) { if (error instanceof CatalogError && error.code === "NOT_FOUND") notFound(); throw error; }
-  return <div className="mx-auto max-w-6xl space-y-8"><div><Link href="/app/concursos" className="text-sm font-semibold text-teal-700">← Voltar ao catálogo</Link><p className="mt-5 text-sm font-semibold text-teal-700">{exam.organization.acronym || exam.organization.name}</p><h1 className="mt-1 text-3xl font-bold">{exam.title}{exam.year ? ` — ${exam.year}` : ""}</h1>{exam.description && <p className="mt-3 max-w-3xl text-slate-600">{exam.description}</p>}</div>
-    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[["Banca", exam.examBoard?.acronym || exam.examBoard?.name || "Não confirmada"], ["Inscrições", `${date(exam.registrationStartAt)} a ${date(exam.registrationEndAt)}`], ["Prova", date(exam.examDate)], ["Fonte", exam.sourceReference || "Não informada"]].map(([label, value]) => <div key={label} className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs font-semibold uppercase text-slate-500">{label}</p><p className="mt-2 text-sm font-medium">{value}</p></div>)}</section>
-    <section><h2 className="text-xl font-bold">Cargos e especialidades</h2><div className="mt-4 grid gap-4 md:grid-cols-2">{exam.positions.map((position) => <article key={position.id} className="rounded-2xl border border-slate-200 bg-white p-5"><h3 className="font-semibold">{position.title}</h3><p className="mt-2 text-sm text-slate-600">{position.educationLevel || "Escolaridade não informada"}{position.vacancies === null ? " · vagas não informadas" : ` · ${position.vacancies} vagas`}</p>{position.specializations.length > 0 && <ul className="mt-3 space-y-1 text-sm">{position.specializations.map((item) => <li key={item.id}>• {item.name}{item.vacancies === null ? "" : ` — ${item.vacancies} vagas`}</li>)}</ul>}</article>)}</div></section>
-    <section><h2 className="text-xl font-bold">Documentos oficiais</h2><div className="mt-4 space-y-3">{exam.notices.length ? exam.notices.map((notice) => <article key={notice.id} className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex flex-wrap justify-between gap-2"><h3 className="font-semibold">{notice.title}</h3><span className="text-sm text-slate-500">{date(notice.publicationDate)}</span></div>{notice.sourceReference && <p className="mt-2 text-sm text-slate-600">Fonte: {notice.sourceReference}</p>}<div className="mt-3 flex flex-wrap gap-3 text-sm">{notice.officialUrl && <a className="font-semibold text-teal-700" href={notice.officialUrl} target="_blank" rel="noreferrer">Documento oficial</a>}{notice.versions.map((version) => version.documentUrl && <a key={version.id} href={version.documentUrl} target="_blank" rel="noreferrer">Versão {version.version}</a>)}</div></article>) : <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">Nenhum edital publicado.</p>}</div></section>
-    <section><h2 className="text-xl font-bold">Conteúdo programático</h2><div className="mt-4 space-y-4">{exam.syllabuses.length ? exam.syllabuses.map((syllabus) => <article key={syllabus.id} className="rounded-2xl border border-slate-200 bg-white p-5"><h3 className="font-semibold">{syllabus.title}</h3><ul className="mt-4 space-y-2">{syllabus.items.map((item) => <li key={item.id} className="border-l-2 border-slate-200 pl-3 text-sm" style={{ marginLeft: item.parentItemId ? 16 : 0 }}><span className="font-medium">{item.title}</span><span className="ml-2 text-slate-500">{item.topic?.name || item.subject?.name || "Ainda não classificado"}</span></li>)}</ul></article>) : <p className="rounded-xl bg-slate-100 p-4 text-sm text-slate-600">Conteúdo programático ainda não publicado.</p>}</div></section>
-  </div>; }
+export default async function ExaminationDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const [actor, { id }] = await Promise.all([requireSessionActor(), params]);
+  let exam: Detail;
+  try {
+    exam = (await catalogService.getExamination(actor, id)) as Detail;
+  } catch (error) {
+    if (error instanceof CatalogError && error.code === "NOT_FOUND") notFound();
+    throw error;
+  }
+  return (
+    <div className="mx-auto max-w-6xl space-y-8">
+      <div>
+        <Link
+          href="/app/concursos"
+          className="text-sm font-semibold text-teal-700"
+        >
+          ← Voltar ao catálogo
+        </Link>
+        <p className="mt-5 text-sm font-semibold text-teal-700">
+          {exam.organization.acronym || exam.organization.name}
+        </p>
+        <h1 className="mt-1 text-3xl font-bold">
+          {exam.title}
+          {exam.year ? ` — ${exam.year}` : ""}
+        </h1>
+        {exam.description && (
+          <p className="mt-3 max-w-3xl text-slate-600">{exam.description}</p>
+        )}
+      </div>
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          [
+            "Banca",
+            exam.examBoard?.acronym || exam.examBoard?.name || "Não confirmada",
+          ],
+          [
+            "Inscrições",
+            `${date(exam.registrationStartAt)} a ${date(exam.registrationEndAt)}`,
+          ],
+          ["Prova", date(exam.examDate)],
+          ["Fonte", exam.sourceReference || "Não informada"],
+        ].map(([label, value]) => (
+          <div
+            key={label}
+            className="rounded-xl border border-slate-200 bg-white p-4"
+          >
+            <p className="text-xs font-semibold uppercase text-slate-500">
+              {label}
+            </p>
+            <p className="mt-2 text-sm font-medium">{value}</p>
+          </div>
+        ))}
+      </section>
+      <section>
+        <h2 className="text-xl font-bold">Cargos e especialidades</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {exam.positions.map((position) => (
+            <article
+              key={position.id}
+              className="rounded-2xl border border-slate-200 bg-white p-5"
+            >
+              <h3 className="font-semibold">{position.title}</h3>
+              <p className="mt-2 text-sm text-slate-600">
+                {position.educationLevel || "Escolaridade não informada"}
+                {position.vacancies === null
+                  ? " · vagas não informadas"
+                  : ` · ${position.vacancies} vagas`}
+              </p>
+              {position.specializations.length > 0 && (
+                <ul className="mt-3 space-y-1 text-sm">
+                  {position.specializations.map((item) => (
+                    <li key={item.id}>
+                      • {item.name}
+                      {item.vacancies === null
+                        ? ""
+                        : ` — ${item.vacancies} vagas`}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </article>
+          ))}
+        </div>
+      </section>
+      <section>
+        <h2 className="text-xl font-bold">Documentos oficiais</h2>
+        <div className="mt-4 space-y-3">
+          {exam.notices.length ? (
+            exam.notices.map((notice) => (
+              <article
+                key={notice.id}
+                className="rounded-2xl border border-slate-200 bg-white p-5"
+              >
+                <div className="flex flex-wrap justify-between gap-2">
+                  <h3 className="font-semibold">{notice.title}</h3>
+                  <span className="text-sm text-slate-500">
+                    {date(notice.publicationDate)}
+                  </span>
+                </div>
+                {notice.sourceReference && (
+                  <p className="mt-2 text-sm text-slate-600">
+                    Fonte: {notice.sourceReference}
+                  </p>
+                )}
+                <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                  {notice.officialUrl && (
+                    <a
+                      className="font-semibold text-teal-700"
+                      href={notice.officialUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Documento oficial
+                    </a>
+                  )}
+                  {notice.versions.map(
+                    (version) =>
+                      version.documentUrl && (
+                        <a
+                          key={version.id}
+                          href={version.documentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Versão {version.version}
+                        </a>
+                      ),
+                  )}
+                </div>
+              </article>
+            ))
+          ) : (
+            <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+              Nenhum edital publicado.
+            </p>
+          )}
+        </div>
+      </section>
+      <section>
+        <h2 className="text-xl font-bold">Conteúdo programático</h2>
+        <div className="mt-4 space-y-4">
+          {exam.syllabuses.length ? (
+            exam.syllabuses.map((syllabus) => (
+              <article
+                key={syllabus.id}
+                className="rounded-2xl border border-slate-200 bg-white p-5"
+              >
+                <h3 className="font-semibold">{syllabus.title}</h3>
+                <ul className="mt-4 space-y-2">
+                  {syllabus.items.map((item) => (
+                    <li
+                      key={item.id}
+                      className="border-l-2 border-slate-200 pl-3 text-sm"
+                      style={{ marginLeft: item.parentItemId ? 16 : 0 }}
+                    >
+                      <span className="font-medium">{item.title}</span>
+                      <span className="ml-2 text-slate-500">
+                        {item.topic?.name ||
+                          item.subject?.name ||
+                          "Ainda não classificado"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))
+          ) : (
+            <p className="rounded-xl bg-slate-100 p-4 text-sm text-slate-600">
+              Conteúdo programático ainda não publicado.
+            </p>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}

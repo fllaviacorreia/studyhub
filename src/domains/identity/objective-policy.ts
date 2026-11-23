@@ -27,7 +27,9 @@ export function canAccessObjective(
     return permissions.OWNER.has(action);
   }
 
-  const membership = objective.members.find((member) => member.userId === actorId);
+  const membership = objective.members.find(
+    (member) => member.userId === actorId,
+  );
 
   return membership ? permissions[membership.role].has(action) : false;
 }
