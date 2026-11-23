@@ -961,6 +961,25 @@ export const learningRepository = {
         },
         select: { id: true, questionId: true, isCorrect: true },
       });
+      if (!isCorrect) {
+        const primaryTopic = await tx.questionTopic.findFirst({
+          where: { questionId: input.questionId },
+          orderBy: [{ isPrimary: "desc" }, { topicId: "asc" }],
+          select: { topicId: true },
+        });
+        await tx.errorNotebookEntry.upsert({
+          where: {
+            userId_questionId: { userId, questionId: input.questionId },
+          },
+          create: {
+            userId,
+            questionId: input.questionId,
+            topicId: primaryTopic?.topicId,
+            sourceAttemptId: attempt.id,
+          },
+          update: { updatedAt: new Date() },
+        });
+      }
       return session.mode === "PRACTICE"
         ? {
             ...attempt,

@@ -5,6 +5,8 @@ import { OrganizationError } from "@/domains/personal-organization/errors";
 import { CatalogError } from "@/domains/catalog/errors";
 import { PlanningError } from "@/domains/planning/errors";
 import { LearningError } from "@/domains/learning/errors";
+import { ReviewError } from "@/domains/reviews/errors";
+import { MockExamError } from "@/domains/mock-exams/errors";
 import { getSessionActor } from "@/server/dal/session";
 
 export function problem(
@@ -137,6 +139,29 @@ export async function handleApi(
           ? "Acesso negado"
           : status === 404
             ? "Não encontrado"
+            : status === 409
+              ? "Conflito"
+              : "Dados inválidos",
+        error.message,
+      );
+    }
+    if (error instanceof ReviewError || error instanceof MockExamError) {
+      const status =
+        error.code === "NOT_FOUND"
+          ? 404
+          : error.code === "FORBIDDEN"
+            ? 403
+            : error.code === "CONFLICT"
+              ? 409
+              : error instanceof MockExamError && error.code === "EXPIRED"
+                ? 410
+                : 422;
+      return problem(
+        status,
+        status === 404
+          ? "Não encontrado"
+          : status === 403
+            ? "Acesso negado"
             : status === 409
               ? "Conflito"
               : "Dados inválidos",

@@ -29,6 +29,7 @@ App Router (UI, Route Handlers, Server Actions)
 | Question Bank         | questões, alternativas, assuntos e procedência  | sessão de autenticação   |
 | Planning              | disponibilidade, regras, planos e tarefas       | métricas agregadas       |
 | Learning Records      | sessões, tentativas, revisões e erros           | plano mutável            |
+| Assessment            | simulados, seleção e estratégias de pontuação   | autenticação e UI        |
 | AI & Ingestion        | extração, grounding, geração e revisão          | publicação direta        |
 
 ## Modelo e invariantes
@@ -107,3 +108,7 @@ O motor de planejamento é um serviço puro em `src/domains/planning`, separado 
 ## Biblioteca e aprendizagem implementadas
 
 A biblioteca e o banco objetivo reutilizam os esboços `Material` e `Question` da fundação. Publicações mantêm versões imutáveis, sessões fixam ordem e versão, e tentativas são fatos históricos privados. A correção é determinística em `src/domains/learning`; HTTP apenas adapta casos de uso e a DAL `server-only` aplica escopo. O tempo permanece exclusivamente em `StudySession`. Regras e endpoints estão em [learning.md](learning.md).
+
+## Revisões e simulados implementados
+
+Agendamentos são deduplicados por usuário e assunto, avaliações formam histórico imutável e o caderno de erros acompanha questões sem substituir tentativas. Simulados reutilizam sessões, versões e correção do banco de questões, acrescentando configuração, prazo e snapshot de pontuação. Tarefas podem referenciar revisões e simulados sem duplicar tempo. Regras e endpoints estão em [reviews-and-mock-exams.md](reviews-and-mock-exams.md).

@@ -99,10 +99,12 @@ export const taskStatusSchema = z.enum([
   "SKIPPED",
   "CANCELLED",
 ]);
-export const taskSchema = z
+const taskObjectSchema = z
   .object({
     studyPlanId: z.uuid(),
     studyPlanTopicId: z.uuid().nullable().optional(),
+    reviewScheduleId: z.uuid().nullable().optional(),
+    mockExamId: z.uuid().nullable().optional(),
     title: z.string().trim().min(2).max(200),
     description: nullableText(4000),
     activityType: z
@@ -115,7 +117,19 @@ export const taskSchema = z
     isLocked: z.boolean().default(false),
   })
   .strict();
-export const updateTaskSchema = taskSchema
+export const taskSchema = taskObjectSchema
+  .refine(
+    (value) => !value.reviewScheduleId || value.activityType === "REVIEW",
+    {
+      path: ["reviewScheduleId"],
+      message: "A revisão exige uma atividade REVIEW.",
+    },
+  )
+  .refine((value) => !value.mockExamId || value.activityType === "SIMULATION", {
+    path: ["mockExamId"],
+    message: "O simulado exige uma atividade SIMULATION.",
+  });
+export const updateTaskSchema = taskObjectSchema
   .omit({ studyPlanId: true })
   .partial()
   .extend({ status: taskStatusSchema.optional() })
