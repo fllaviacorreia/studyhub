@@ -2,7 +2,7 @@
 
 Plataforma web multiusuário e multiobjetivo para organizar estudos, editais, conteúdos, questões, planejamento e evolução. SEFAZ-BA e ANPD são apenas exemplos de uso.
 
-O projeto possui fundação funcional com PostgreSQL, Prisma e autenticação local via Auth.js, além do gerenciamento privado de áreas e objetivos de estudo e dashboard persistido. Consulte [a arquitetura](docs/architecture.md) e [o plano incremental](docs/implementation-plan.md).
+O projeto possui fundação funcional com PostgreSQL, Prisma e autenticação local via Auth.js, gerenciamento privado de áreas e objetivos e um catálogo compartilhado de concursos, editais e conteúdos programáticos. Consulte [a arquitetura](docs/architecture.md), [o catálogo](docs/catalog.md) e [o plano incremental](docs/implementation-plan.md).
 
 ## Desenvolvimento
 
@@ -20,7 +20,7 @@ npm run dev
 
 A aplicação estará em `http://localhost:3000`. O health check do banco está em `GET /api/v1/health`.
 
-Após entrar, use `/app/areas` e `/app/objetivos`. A API autenticada está em `GET/POST /api/v1/study-areas`, `GET/PATCH/DELETE /api/v1/study-areas/:id`, `GET/POST /api/v1/study-goals` e `GET/PATCH/DELETE /api/v1/study-goals/:id`.
+Após entrar, use `/app/areas`, `/app/objetivos` e `/app/concursos`. A API privada continua sob `/api/v1/study-areas` e `/api/v1/study-goals`; a referência do catálogo está em [docs/catalog.md](docs/catalog.md).
 
 ## Variáveis de ambiente
 
@@ -37,6 +37,7 @@ Nenhuma variável desta entrega usa o prefixo `NEXT_PUBLIC_`.
 npm run db:validate         # valida o schema
 npm run db:migrate          # cria/aplica migrations no desenvolvimento
 npm run db:migrate:deploy   # aplica migrations existentes
+npm run db:seed             # dados fictícios e idempotentes de desenvolvimento
 ```
 
 Validação local:
