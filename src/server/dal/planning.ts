@@ -39,6 +39,8 @@ const taskSelect = {
   id: true,
   planId: true,
   studyPlanTopicId: true,
+  reviewScheduleId: true,
+  mockExamId: true,
   title: true,
   description: true,
   activityType: true,
@@ -668,10 +670,38 @@ export const planningRepository = {
         "INVALID_DEPENDENCY",
         "O assunto não pertence ao plano.",
       );
+    if (
+      input.reviewScheduleId &&
+      !(await prisma.reviewSchedule.findFirst({
+        where: {
+          id: input.reviewScheduleId,
+          userId: actorId,
+          status: "ACTIVE",
+        },
+        select: { id: true },
+      }))
+    )
+      throw new PlanningError(
+        "INVALID_DEPENDENCY",
+        "A revisão não pertence a você ou não está ativa.",
+      );
+    if (
+      input.mockExamId &&
+      !(await prisma.mockExam.findFirst({
+        where: { id: input.mockExamId, userId: actorId, status: "READY" },
+        select: { id: true },
+      }))
+    )
+      throw new PlanningError(
+        "INVALID_DEPENDENCY",
+        "O simulado não pertence a você ou não está pronto.",
+      );
     return prisma.planTask.create({
       data: {
         planId: input.studyPlanId,
         studyPlanTopicId: input.studyPlanTopicId,
+        reviewScheduleId: input.reviewScheduleId,
+        mockExamId: input.mockExamId,
         title: input.title,
         description: input.description,
         activityType: input.activityType,
@@ -707,6 +737,8 @@ export const planningRepository = {
       where: { id },
       data: {
         studyPlanTopicId: input.studyPlanTopicId,
+        reviewScheduleId: input.reviewScheduleId,
+        mockExamId: input.mockExamId,
         title: input.title,
         description: input.description,
         activityType: input.activityType,
