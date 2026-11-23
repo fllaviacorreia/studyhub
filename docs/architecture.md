@@ -43,6 +43,8 @@ App Router (UI, Route Handlers, Server Actions)
 - Prioridade 1–5 e intervalos de disponibilidade terão `CHECK`s na primeira migração.
 - Áreas possuem estado explícito `ACTIVE`/`ARCHIVED`; objetivos preservam quatro estados. Arquivar mantém vínculos e restaura o estado operacional sem apagar histórico.
 - Exclusão física de área é bloqueada quando existem objetivos vinculados. Objetivos com planos ou sessões também não são removidos fisicamente.
+- O vínculo opcional `Objective.examinationId` e `ObjectivePosition` seleciona concurso, cargos e especialidades sem transformar o catálogo global em dado do usuário.
+- Editais preservam retificações por identidade (`originalNoticeId`) e versões documentais ordenadas; conteúdos programáticos preservam a árvore original antes da classificação taxonômica.
 
 ## Autorização
 
@@ -70,6 +72,8 @@ Route Handlers ficam em `/api/v1`; Server Actions adaptam os mesmos casos de uso
 | `GET/PATCH/DELETE /api/v1/study-goals/:id` | proprietário; exclusão preserva dependências históricas |
 | `POST /api/v1/objectives/:id/archive` | owner/editor; idempotente |
 | `GET /api/v1/catalog/subjects` | publicados, salvo curadoria |
+| `GET /api/v1/examinations` | catálogo publicado, com busca, filtros e cursor |
+| `PUT /api/v1/study-goals/:id/catalog` | proprietário; valida concurso, cargo e especialidade em transação |
 | `POST /api/v1/notices/:id/versions` | curador cria rascunho |
 | `POST /api/v1/notice-versions/:id/review` | transição validada |
 | `GET/POST /api/v1/study-plans` | owner e objetivos acessíveis |

@@ -34,6 +34,8 @@ const objectiveSelect = {
   updatedAt: true,
   studyArea: { select: { id: true, name: true } },
   type: { select: { key: true, name: true } },
+  examination: { select: { id: true, title: true, year: true, organization: { select: { name: true } } } },
+  positions: { select: { position: { select: { id: true, title: true } }, specialization: { select: { id: true, name: true } } } },
 } satisfies Prisma.ObjectiveSelect;
 
 function page<T extends { id: string }>(items: T[], limit: number) {

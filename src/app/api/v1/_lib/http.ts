@@ -2,6 +2,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { ZodError, type ZodType } from "zod";
 
 import { OrganizationError } from "@/domains/personal-organization/errors";
+import { CatalogError } from "@/domains/catalog/errors";
 import { getSessionActor } from "@/server/dal/session";
 
 export function problem(status: number, title: string, detail: string, errors?: unknown) {
@@ -38,6 +39,10 @@ export async function handleApi(action: () => Promise<Response>): Promise<Respon
     if (error instanceof OrganizationError) {
       const status = error.code === "NOT_FOUND" ? 404 : error.code === "CONFLICT" ? 409 : 422;
       return problem(status, status === 404 ? "Não encontrado" : status === 409 ? "Conflito" : "Associação inválida", error.message);
+    }
+    if (error instanceof CatalogError) {
+      const status = error.code === "NOT_FOUND" ? 404 : error.code === "FORBIDDEN" ? 403 : error.code === "CONFLICT" ? 409 : 422;
+      return problem(status, status === 403 ? "Acesso negado" : status === 404 ? "Não encontrado" : status === 409 ? "Conflito" : "Associação inválida", error.message);
     }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return problem(409, "Conflito", "Já existe um registro com esses dados.");
