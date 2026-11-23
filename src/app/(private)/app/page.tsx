@@ -1,16 +1,26 @@
 import Link from "next/link";
 import { requireSessionActor } from "@/server/dal/session";
 import { personalOrganizationService } from "@/server/personal-organization/service";
+import { reviewRepository } from "@/server/dal/reviews";
+import { mockExamRepository } from "@/server/dal/mock-exams";
 
 export default async function DashboardPage() {
   const actor = await requireSessionActor();
   const firstName = actor.name?.split(" ")[0];
-  const summary = (await personalOrganizationService.dashboard(actor.id)) as {
-    activeAreas: number;
-    activeObjectives: number;
-    withTargetDate: number;
-    byPriority: Record<string, number>;
-  };
+  const [summary, reviews, mockExams] = (await Promise.all([
+    personalOrganizationService.dashboard(actor.id),
+    reviewRepository.list(actor.id, { limit: 100, status: "ACTIVE", days: 0 }),
+    mockExamRepository.list(actor.id, { limit: 100 }),
+  ])) as [
+    {
+      activeAreas: number;
+      activeObjectives: number;
+      withTargetDate: number;
+      byPriority: Record<string, number>;
+    },
+    { items: unknown[] },
+    { items: Array<{ _count: { attempts: number } }> },
+  ];
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -41,6 +51,28 @@ export default async function DashboardPage() {
           <h2 className="font-semibold">Minhas áreas →</h2>
           <p className="mt-2 text-sm text-slate-600">
             Crie, edite, arquive e restaure áreas de estudo.
+          </p>
+        </Link>
+        <Link
+          href="/app/revisoes"
+          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:border-teal-300"
+        >
+          <h2 className="font-semibold">Revisões pendentes →</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            {reviews.items.length} revisão(ões) prevista(s) até agora.
+          </p>
+        </Link>
+        <Link
+          href="/app/simulados"
+          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:border-teal-300"
+        >
+          <h2 className="font-semibold">Simulados →</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            {mockExams.items.reduce(
+              (sum, item) => sum + item._count.attempts,
+              0,
+            )}{" "}
+            tentativa(s) registrada(s).
           </p>
         </Link>
         <Link

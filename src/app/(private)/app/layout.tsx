@@ -75,6 +75,24 @@ export default async function PrivateLayout({
           >
             Desempenho
           </Link>
+          <Link
+            href="/app/revisoes"
+            className="flex rounded-xl px-3 py-3 font-medium hover:bg-white/10"
+          >
+            Revisões
+          </Link>
+          <Link
+            href="/app/caderno-de-erros"
+            className="flex rounded-xl px-3 py-3 font-medium hover:bg-white/10"
+          >
+            Caderno de erros
+          </Link>
+          <Link
+            href="/app/simulados"
+            className="flex rounded-xl px-3 py-3 font-medium hover:bg-white/10"
+          >
+            Simulados
+          </Link>
         </nav>
         <p className="mt-auto px-3 text-xs leading-5 text-slate-400">
           Novos recursos serão liberados por etapas, sem comprometer seus dados.
@@ -158,6 +176,18 @@ export default async function PrivateLayout({
               className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold hover:bg-teal-50"
             >
               Questões
+            </Link>
+            <Link
+              href="/app/revisoes"
+              className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold hover:bg-teal-50"
+            >
+              Revisões
+            </Link>
+            <Link
+              href="/app/simulados"
+              className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold hover:bg-teal-50"
+            >
+              Simulados
             </Link>
           </nav>
         </header>

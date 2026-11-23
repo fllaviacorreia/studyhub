@@ -2,7 +2,7 @@
 
 Plataforma modular de estudos com organização pessoal, catálogo, planos, biblioteca educacional, banco de questões e acompanhamento de desempenho.
 
-Documentação dos módulos: [arquitetura](docs/architecture.md), [catálogo](docs/catalog.md), [planejamento](docs/planning.md) e [biblioteca/aprendizagem](docs/learning.md).
+Documentação dos módulos: [arquitetura](docs/architecture.md), [catálogo](docs/catalog.md), [planejamento](docs/planning.md), [biblioteca/aprendizagem](docs/learning.md) e [revisões e simulados](docs/reviews-and-mock-exams.md).
 
 Plataforma multiusuário para organizar áreas, objetivos, catálogo e planos de estudo. O módulo de planejamento oferece disponibilidade semanal, assuntos compartilhados, geração determinística, prévia/versionamento, replanejamento protegido, agenda, sessões e indicadores. Consulte [docs/planning.md](docs/planning.md).
 
