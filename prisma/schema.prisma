@@ -233,6 +233,51 @@ enum ScoringStrategy {
   WEIGHTED_BY_SECTION
 }
 
+enum AIConversationStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum AIMessageRole {
+  USER
+  ASSISTANT
+  TOOL
+}
+
+enum AIMessageStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum AIUsageStatus {
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum AIGenerationType {
+  SUMMARY
+  EXPLANATION
+  QUESTION
+  STUDY_GUIDE
+}
+
+enum AIGenerationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AIRecommendationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
 model User {
   id            String     @id @default(uuid()) @db.Uuid
   name          String?
@@ -244,26 +289,31 @@ model User {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
-  accounts         Account[]
-  sessions         AuthSession[]
-  studyAreas       StudyArea[]
-  ownedObjectives  Objective[]          @relation("ObjectiveOwner")
-  objectiveMembers ObjectiveMember[]
-  materials        Material[]           @relation("MaterialAuthor")
-  questions        Question[]           @relation("QuestionAuthor")
-  studyPlans       StudyPlan[]
-  studySessions    StudySession[]
-  attempts         QuestionAttempt[]
-  reviewSchedules  ReviewSchedule[]
-  reviewAttempts   ReviewAttempt[]
-  errorEntries     ErrorNotebookEntry[]
-  mockExams        MockExam[]
-  mockExamAttempts MockExamAttempt[]
-  learningProgress LearningProgress[]
-  materialVersions MaterialVersion[]    @relation("MaterialVersionCreator")
-  questionVersions QuestionVersion[]    @relation("QuestionVersionCreator")
-  exerciseLists    ExerciseList[]
-  questionSessions QuestionSession[]
+  accounts          Account[]
+  sessions          AuthSession[]
+  studyAreas        StudyArea[]
+  ownedObjectives   Objective[]          @relation("ObjectiveOwner")
+  objectiveMembers  ObjectiveMember[]
+  materials         Material[]           @relation("MaterialAuthor")
+  questions         Question[]           @relation("QuestionAuthor")
+  studyPlans        StudyPlan[]
+  studySessions     StudySession[]
+  attempts          QuestionAttempt[]
+  reviewSchedules   ReviewSchedule[]
+  reviewAttempts    ReviewAttempt[]
+  errorEntries      ErrorNotebookEntry[]
+  mockExams         MockExam[]
+  mockExamAttempts  MockExamAttempt[]
+  learningProgress  LearningProgress[]
+  materialVersions  MaterialVersion[]    @relation("MaterialVersionCreator")
+  questionVersions  QuestionVersion[]    @relation("QuestionVersionCreator")
+  exerciseLists     ExerciseList[]
+  questionSessions  QuestionSession[]
+  materialAccesses  MaterialAccess[]
+  aiConversations   AIConversation[]
+  aiUsageRecords    AIUsageRecord[]
+  aiGenerationJobs  AIGenerationJob[]
+  aiRecommendations AIRecommendation[]
 }
 
 model Account {
@@ -334,31 +384,33 @@ model ObjectiveType {
 }
 
 model Objective {
-  id            String                    @id @default(uuid()) @db.Uuid
-  ownerId       String                    @db.Uuid
-  studyAreaId   String?                   @db.Uuid
-  typeId        String                    @db.Uuid
-  name          String                    @db.VarChar(160)
-  description   String?                   @db.Text
-  priority      Int                       @default(3) @db.SmallInt
-  deadline      DateTime?                 @db.Date
-  status        ObjectiveStatus           @default(ACTIVE)
-  archivedAt    DateTime?
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
-  owner         User                      @relation("ObjectiveOwner", fields: [ownerId], references: [id], onDelete: Restrict)
-  studyArea     StudyArea?                @relation(fields: [studyAreaId], references: [id], onDelete: SetNull)
-  type          ObjectiveType             @relation(fields: [typeId], references: [id], onDelete: Restrict)
-  members       ObjectiveMember[]
-  notices       ObjectiveNotice[]
-  subjects      ObjectiveSubject[]
-  plans         StudyPlanObjective[]
-  sessions      StudySession[]
-  examinationId String?                   @db.Uuid
-  examination   Examination?              @relation(fields: [examinationId], references: [id], onDelete: SetNull)
-  positions     ObjectivePosition[]
-  planTopics    StudyPlanTopicObjective[]
-  mockExams     MockExam[]
+  id                String                    @id @default(uuid()) @db.Uuid
+  ownerId           String                    @db.Uuid
+  studyAreaId       String?                   @db.Uuid
+  typeId            String                    @db.Uuid
+  name              String                    @db.VarChar(160)
+  description       String?                   @db.Text
+  priority          Int                       @default(3) @db.SmallInt
+  deadline          DateTime?                 @db.Date
+  status            ObjectiveStatus           @default(ACTIVE)
+  archivedAt        DateTime?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  owner             User                      @relation("ObjectiveOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  studyArea         StudyArea?                @relation(fields: [studyAreaId], references: [id], onDelete: SetNull)
+  type              ObjectiveType             @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  members           ObjectiveMember[]
+  notices           ObjectiveNotice[]
+  subjects          ObjectiveSubject[]
+  plans             StudyPlanObjective[]
+  sessions          StudySession[]
+  examinationId     String?                   @db.Uuid
+  examination       Examination?              @relation(fields: [examinationId], references: [id], onDelete: SetNull)
+  positions         ObjectivePosition[]
+  planTopics        StudyPlanTopicObjective[]
+  mockExams         MockExam[]
+  aiConversations   AIConversation[]
+  aiRecommendations AIRecommendation[]
 
   @@index([ownerId, status])
   @@index([ownerId, studyAreaId, status])
@@ -698,8 +750,20 @@ model Material {
   sources          ContentSource[]
   progress         LearningProgress[]
   tasks            PlanTask[]
+  accesses         MaterialAccess[]
 
   @@index([authorId, visibility, status])
+}
+
+model MaterialAccess {
+  materialId String   @db.Uuid
+  userId     String   @db.Uuid
+  createdAt  DateTime @default(now())
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([materialId, userId])
+  @@index([userId])
 }
 
 model MaterialVersion {
@@ -872,6 +936,8 @@ model StudyPlan {
   sessions            StudySession[]
   revisions           StudyPlanRevision[]
   previews            PlanningPreview[]
+  aiConversations     AIConversation[]
+  aiRecommendations   AIRecommendation[]
 
   @@index([ownerId, status, createdAt])
 }
@@ -1256,4 +1322,110 @@ model MockExamAttempt {
 
   @@index([userId, status, startedAt])
   @@index([mockExamId, startedAt])
+}
+
+model AIConversation {
+  id          String               @id @default(uuid()) @db.Uuid
+  userId      String               @db.Uuid
+  title       String               @db.VarChar(160)
+  studyGoalId String?              @db.Uuid
+  studyPlanId String?              @db.Uuid
+  status      AIConversationStatus @default(ACTIVE)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  studyGoal   Objective?           @relation(fields: [studyGoalId], references: [id], onDelete: SetNull)
+  studyPlan   StudyPlan?           @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+  messages    AIMessage[]
+  usage       AIUsageRecord[]
+
+  @@index([userId, status, updatedAt])
+  @@index([studyGoalId])
+  @@index([studyPlanId])
+}
+
+model AIMessage {
+  id                 String            @id @default(uuid()) @db.Uuid
+  conversationId     String            @db.Uuid
+  role               AIMessageRole
+  content            String            @db.Text
+  status             AIMessageStatus   @default(PENDING)
+  providerResponseId String?           @db.VarChar(160)
+  createdAt          DateTime          @default(now())
+  conversation       AIConversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sources            AIMessageSource[]
+
+  @@index([conversationId, createdAt, id])
+}
+
+model AIMessageSource {
+  id              String    @id @default(uuid()) @db.Uuid
+  messageId       String    @db.Uuid
+  sourceType      String    @db.VarChar(60)
+  sourceId        String?   @db.Uuid
+  sourceVersionId String?   @db.Uuid
+  title           String    @db.VarChar(240)
+  sourceUrl       String?
+  location        String?   @db.VarChar(240)
+  excerpt         String?   @db.Text
+  createdAt       DateTime  @default(now())
+  message         AIMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([sourceId, sourceVersionId])
+}
+
+model AIUsageRecord {
+  id                String          @id @default(uuid()) @db.Uuid
+  userId            String          @db.Uuid
+  conversationId    String?         @db.Uuid
+  operation         String          @db.VarChar(80)
+  model             String          @db.VarChar(120)
+  inputTokens       Int?
+  outputTokens      Int?
+  cachedInputTokens Int?
+  estimatedCost     Decimal?        @db.Decimal(14, 6)
+  status            AIUsageStatus
+  createdAt         DateTime        @default(now())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  conversation      AIConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([conversationId])
+}
+
+model AIGenerationJob {
+  id              String             @id @default(uuid()) @db.Uuid
+  userId          String             @db.Uuid
+  generationType  AIGenerationType
+  status          AIGenerationStatus @default(PENDING)
+  inputReference  Json?
+  outputReference Json?
+  errorCode       String?            @db.VarChar(80)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  user            User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, status, createdAt])
+}
+
+model AIRecommendation {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  userId             String                 @db.Uuid
+  studyGoalId        String?                @db.Uuid
+  studyPlanId        String?                @db.Uuid
+  recommendationType String                 @db.VarChar(80)
+  title              String                 @db.VarChar(180)
+  description        String                 @db.Text
+  rationale          String?                @db.Text
+  status             AIRecommendationStatus @default(PENDING)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  user               User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  studyGoal          Objective?             @relation(fields: [studyGoalId], references: [id], onDelete: SetNull)
+  studyPlan          StudyPlan?             @relation(fields: [studyPlanId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, createdAt])
+  @@index([studyGoalId])
+  @@index([studyPlanId])
 }
