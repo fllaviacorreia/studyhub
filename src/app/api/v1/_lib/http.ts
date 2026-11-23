@@ -4,6 +4,7 @@ import { ZodError, type ZodType } from "zod";
 import { OrganizationError } from "@/domains/personal-organization/errors";
 import { CatalogError } from "@/domains/catalog/errors";
 import { PlanningError } from "@/domains/planning/errors";
+import { LearningError } from "@/domains/learning/errors";
 import { getSessionActor } from "@/server/dal/session";
 
 export function problem(
@@ -118,6 +119,27 @@ export async function handleApi(
           : status === 409
             ? "Conflito"
             : "Associação inválida",
+        error.message,
+      );
+    }
+    if (error instanceof LearningError) {
+      const status =
+        error.code === "NOT_FOUND"
+          ? 404
+          : error.code === "FORBIDDEN"
+            ? 403
+            : error.code === "CONFLICT"
+              ? 409
+              : 422;
+      return problem(
+        status,
+        status === 403
+          ? "Acesso negado"
+          : status === 404
+            ? "Não encontrado"
+            : status === 409
+              ? "Conflito"
+              : "Dados inválidos",
         error.message,
       );
     }
