@@ -17,7 +17,9 @@ describe("objective authorization policy", () => {
 
   it("allows an editor to update but not manage members", () => {
     expect(canAccessObjective("editor", objective, "update")).toBe(true);
-    expect(canAccessObjective("editor", objective, "manageMembers")).toBe(false);
+    expect(canAccessObjective("editor", objective, "manageMembers")).toBe(
+      false,
+    );
   });
 
   it("restricts a viewer to reading", () => {

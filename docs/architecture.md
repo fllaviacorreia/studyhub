@@ -20,16 +20,16 @@ App Router (UI, Route Handlers, Server Actions)
 - `src/server/db`: Prisma e persistência; `src/shared`: tipos/utilitários sem domínio.
 - `prisma`: modelo persistente, migrações e seed de demonstração.
 
-| Domínio | Responsabilidade | Não deve conhecer |
-| --- | --- | --- |
-| Identity & Access | identidade, sessão, papéis e políticas | planejamento e progresso |
-| Personal Organization | áreas e objetivos | execução de tarefas |
-| Catalog | órgãos, concursos, cargos, editais e taxonomia | progresso privado |
-| Learning Library | materiais, arquivos, autoria, licença e versões | cronogramas |
-| Question Bank | questões, alternativas, assuntos e procedência | sessão de autenticação |
-| Planning | disponibilidade, regras, planos e tarefas | métricas agregadas |
-| Learning Records | sessões, tentativas, revisões e erros | plano mutável |
-| AI & Ingestion | extração, grounding, geração e revisão | publicação direta |
+| Domínio               | Responsabilidade                                | Não deve conhecer        |
+| --------------------- | ----------------------------------------------- | ------------------------ |
+| Identity & Access     | identidade, sessão, papéis e políticas          | planejamento e progresso |
+| Personal Organization | áreas e objetivos                               | execução de tarefas      |
+| Catalog               | órgãos, concursos, cargos, editais e taxonomia  | progresso privado        |
+| Learning Library      | materiais, arquivos, autoria, licença e versões | cronogramas              |
+| Question Bank         | questões, alternativas, assuntos e procedência  | sessão de autenticação   |
+| Planning              | disponibilidade, regras, planos e tarefas       | métricas agregadas       |
+| Learning Records      | sessões, tentativas, revisões e erros           | plano mutável            |
+| AI & Ingestion        | extração, grounding, geração e revisão          | publicação direta        |
 
 ## Modelo e invariantes
 
@@ -50,13 +50,13 @@ App Router (UI, Route Handlers, Server Actions)
 
 Auth.js resolve a sessão; nesta fundação, cadastro local usa credenciais com hash BCrypt e sessão JWT em cookie seguro. A DAL recebe o ator derivado da sessão, nunca do corpo; cada consulta privada inclui `ownerId`, `userId` ou associação. Buscar só pelo ID e verificar depois não é aceito. O modelo de contas e sessões persistidas permanece disponível para provedores futuros, sem habilitá-los prematuramente.
 
-| Recurso | Leitura | Escrita | Publicação |
-| --- | --- | --- | --- |
-| Área pessoal | proprietário | proprietário | n/a |
-| Objetivo | owner/editor/viewer | owner/editor | n/a |
-| Plano e progresso | proprietário | proprietário | n/a |
-| Material/questão privada | autor/permissão | autor | curador/admin |
-| Catálogo e edital | publicado ou curador | curador/admin | curador/admin |
+| Recurso                  | Leitura              | Escrita       | Publicação    |
+| ------------------------ | -------------------- | ------------- | ------------- |
+| Área pessoal             | proprietário         | proprietário  | n/a           |
+| Objetivo                 | owner/editor/viewer  | owner/editor  | n/a           |
+| Plano e progresso        | proprietário         | proprietário  | n/a           |
+| Material/questão privada | autor/permissão      | autor         | curador/admin |
+| Catálogo e edital        | publicado ou curador | curador/admin | curador/admin |
 
 Administração terá casos de uso e auditoria próprios. RLS será defesa adicional, não substituto das policies.
 
@@ -64,38 +64,42 @@ Administração terá casos de uso e auditoria próprios. RLS será defesa adici
 
 Route Handlers ficam em `/api/v1`; Server Actions adaptam os mesmos casos de uso, sem Prisma direto.
 
-| Método e rota | Regra principal |
-| --- | --- |
-| `GET/POST /api/v1/study-areas` | escopo da sessão |
-| `PATCH/DELETE /api/v1/study-areas/:id` | owner; arquiva com histórico |
-| `GET/POST /api/v1/study-goals` | objetivos do proprietário; área validada no mesmo escopo |
-| `GET/PATCH/DELETE /api/v1/study-goals/:id` | proprietário; exclusão preserva dependências históricas |
-| `POST /api/v1/objectives/:id/archive` | owner/editor; idempotente |
-| `GET /api/v1/catalog/subjects` | publicados, salvo curadoria |
-| `GET /api/v1/examinations` | catálogo publicado, com busca, filtros e cursor |
-| `PUT /api/v1/study-goals/:id/catalog` | proprietário; valida concurso, cargo e especialidade em transação |
-| `POST /api/v1/notices/:id/versions` | curador cria rascunho |
-| `POST /api/v1/notice-versions/:id/review` | transição validada |
-| `GET/POST /api/v1/study-plans` | owner e objetivos acessíveis |
-| `POST /api/v1/study-plans/:id/generate` | idempotente/versionado |
-| `POST /api/v1/question-attempts` | correção no servidor |
+| Método e rota                              | Regra principal                                                   |
+| ------------------------------------------ | ----------------------------------------------------------------- |
+| `GET/POST /api/v1/study-areas`             | escopo da sessão                                                  |
+| `PATCH/DELETE /api/v1/study-areas/:id`     | owner; arquiva com histórico                                      |
+| `GET/POST /api/v1/study-goals`             | objetivos do proprietário; área validada no mesmo escopo          |
+| `GET/PATCH/DELETE /api/v1/study-goals/:id` | proprietário; exclusão preserva dependências históricas           |
+| `POST /api/v1/objectives/:id/archive`      | owner/editor; idempotente                                         |
+| `GET /api/v1/catalog/subjects`             | publicados, salvo curadoria                                       |
+| `GET /api/v1/examinations`                 | catálogo publicado, com busca, filtros e cursor                   |
+| `PUT /api/v1/study-goals/:id/catalog`      | proprietário; valida concurso, cargo e especialidade em transação |
+| `POST /api/v1/notices/:id/versions`        | curador cria rascunho                                             |
+| `POST /api/v1/notice-versions/:id/review`  | transição validada                                                |
+| `GET/POST /api/v1/study-plans`             | owner e objetivos acessíveis                                      |
+| `POST /api/v1/study-plans/:id/generate`    | idempotente/versionado                                            |
+| `POST /api/v1/question-attempts`           | correção no servidor                                              |
 
 Erros usam `application/problem+json`; listas usam cursor e limite; escritas relevantes aceitam idempotency key.
 
 ## Riscos
 
-| Risco | Impacto | Mitigação |
-| --- | --- | --- |
-| vazamento multiusuário | crítico | DAL, escopo na query, testes negativos e RLS |
-| taxonomia divergente | alto | catálogo canônico, aliases e curadoria |
-| extração incorreta | alto | evidência, confiança e revisão humana |
-| conteúdo sem licença | crítico | procedência/licença e bloqueio de publicação |
-| replanejamento destrutivo | alto | locks, idempotência e linhagem |
-| métricas acopladas ao plano | alto | fatos imutáveis independentes |
-| ciclos na hierarquia | médio | validação transacional e trigger |
-| datas/fusos | alto | UTC, timezone IANA e datas civis `date` |
-| custo/latência de IA | médio | jobs, limites, cache e modelo configurável |
+| Risco                       | Impacto | Mitigação                                    |
+| --------------------------- | ------- | -------------------------------------------- |
+| vazamento multiusuário      | crítico | DAL, escopo na query, testes negativos e RLS |
+| taxonomia divergente        | alto    | catálogo canônico, aliases e curadoria       |
+| extração incorreta          | alto    | evidência, confiança e revisão humana        |
+| conteúdo sem licença        | crítico | procedência/licença e bloqueio de publicação |
+| replanejamento destrutivo   | alto    | locks, idempotência e linhagem               |
+| métricas acopladas ao plano | alto    | fatos imutáveis independentes                |
+| ciclos na hierarquia        | médio   | validação transacional e trigger             |
+| datas/fusos                 | alto    | UTC, timezone IANA e datas civis `date`      |
+| custo/latência de IA        | médio   | jobs, limites, cache e modelo configurável   |
 
 ## Trilha Fiscal
 
 Não há implementação da Trilha Fiscal neste repositório ou histórico (somente Create Next App). Nenhum componente foi copiado. Planos, disciplinas, assuntos, questões e progresso foram generalizados sem dependência de concurso, órgão ou banca.
+
+## Planejamento implementado
+
+O motor de planejamento é um serviço puro em `src/domains/planning`, separado de HTTP e Prisma. A DAL privada aplica escopo do proprietário em todas as consultas. Geração e replanejamento usam prévias persistidas, versão otimista, validade de 30 minutos, chaves idempotentes e revisões transacionais. Detalhes e regras estão em [planning.md](planning.md).

@@ -15,20 +15,20 @@ O catálogo é global e separado dos dados privados. Instituições, bancas, con
 
 Todas as rotas exigem sessão e retornam erros no formato `application/problem+json`.
 
-| Método | Rota | Uso |
-| --- | --- | --- |
-| `GET/POST` | `/api/v1/organizations` | lista/cria instituições |
-| `GET/PATCH` | `/api/v1/organizations/:id` | detalhes/edição da instituição |
-| `GET/POST` | `/api/v1/exam-boards` | lista/cria bancas |
-| `GET/POST` | `/api/v1/examinations` | filtros/criação de concursos |
-| `GET/PATCH` | `/api/v1/examinations/:id` | detalhe/edição do concurso |
-| `GET/POST` | `/api/v1/examinations/:id/positions` | cargos e especialidades |
-| `GET/POST` | `/api/v1/examinations/:id/notices` | editais e retificações |
-| `POST` | `/api/v1/notices/:id/versions` | versão documental histórica |
-| `GET/POST` | `/api/v1/examinations/:id/syllabuses` | conteúdo hierárquico |
-| `GET/POST` | `/api/v1/subjects` | disciplinas reutilizáveis |
-| `GET/POST` | `/api/v1/subjects/:id/topics` | taxonomia hierárquica |
-| `PUT` | `/api/v1/study-goals/:id/catalog` | substitui/desfaz vínculos privados |
+| Método      | Rota                                  | Uso                                |
+| ----------- | ------------------------------------- | ---------------------------------- |
+| `GET/POST`  | `/api/v1/organizations`               | lista/cria instituições            |
+| `GET/PATCH` | `/api/v1/organizations/:id`           | detalhes/edição da instituição     |
+| `GET/POST`  | `/api/v1/exam-boards`                 | lista/cria bancas                  |
+| `GET/POST`  | `/api/v1/examinations`                | filtros/criação de concursos       |
+| `GET/PATCH` | `/api/v1/examinations/:id`            | detalhe/edição do concurso         |
+| `GET/POST`  | `/api/v1/examinations/:id/positions`  | cargos e especialidades            |
+| `GET/POST`  | `/api/v1/examinations/:id/notices`    | editais e retificações             |
+| `POST`      | `/api/v1/notices/:id/versions`        | versão documental histórica        |
+| `GET/POST`  | `/api/v1/examinations/:id/syllabuses` | conteúdo hierárquico               |
+| `GET/POST`  | `/api/v1/subjects`                    | disciplinas reutilizáveis          |
+| `GET/POST`  | `/api/v1/subjects/:id/topics`         | taxonomia hierárquica              |
+| `PUT`       | `/api/v1/study-goals/:id/catalog`     | substitui/desfaz vínculos privados |
 
 Listas usam cursor e `limit`; concursos aceitam `search`, `organizationId`, `examBoardId`, `year` e `status`.
 

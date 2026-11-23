@@ -4,7 +4,10 @@ import { loginSchema, registrationSchema } from "./auth-schemas";
 
 describe("authentication schemas", () => {
   it("normalizes an e-mail before authentication", () => {
-    const result = loginSchema.parse({ email: " Pessoa@Example.COM ", password: "secret" });
+    const result = loginSchema.parse({
+      email: " Pessoa@Example.COM ",
+      password: "secret",
+    });
     expect(result.email).toBe("pessoa@example.com");
   });
 

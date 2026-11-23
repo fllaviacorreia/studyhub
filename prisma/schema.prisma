@@ -102,6 +102,47 @@ enum TaskOrigin {
   RESCHEDULED
 }
 
+enum StudyPlanStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum PlanningStrategy {
+  BALANCED
+  PRIORITY_BASED
+  DEADLINE_BASED
+}
+
+enum PlanTopicStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+enum ActivityType {
+  THEORY
+  PRACTICE
+  REVIEW
+  SIMULATION
+  CUSTOM
+}
+
+enum PlanningPreviewKind {
+  GENERATE
+  REPLAN
+}
+
+enum PlanningPreviewStatus {
+  PENDING
+  APPLIED
+  EXPIRED
+  CANCELLED
+}
+
 enum SessionKind {
   THEORY
   PRACTICE
@@ -208,29 +249,30 @@ model ObjectiveType {
 }
 
 model Objective {
-  id            String               @id @default(uuid()) @db.Uuid
-  ownerId       String               @db.Uuid
-  studyAreaId   String?              @db.Uuid
-  typeId        String               @db.Uuid
-  name          String               @db.VarChar(160)
-  description   String?              @db.Text
-  priority      Int                  @default(3) @db.SmallInt
-  deadline      DateTime?            @db.Date
-  status        ObjectiveStatus      @default(ACTIVE)
+  id            String                    @id @default(uuid()) @db.Uuid
+  ownerId       String                    @db.Uuid
+  studyAreaId   String?                   @db.Uuid
+  typeId        String                    @db.Uuid
+  name          String                    @db.VarChar(160)
+  description   String?                   @db.Text
+  priority      Int                       @default(3) @db.SmallInt
+  deadline      DateTime?                 @db.Date
+  status        ObjectiveStatus           @default(ACTIVE)
   archivedAt    DateTime?
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  owner         User                 @relation("ObjectiveOwner", fields: [ownerId], references: [id], onDelete: Restrict)
-  studyArea     StudyArea?           @relation(fields: [studyAreaId], references: [id], onDelete: SetNull)
-  type          ObjectiveType        @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  owner         User                      @relation("ObjectiveOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  studyArea     StudyArea?                @relation(fields: [studyAreaId], references: [id], onDelete: SetNull)
+  type          ObjectiveType             @relation(fields: [typeId], references: [id], onDelete: Restrict)
   members       ObjectiveMember[]
   notices       ObjectiveNotice[]
   subjects      ObjectiveSubject[]
   plans         StudyPlanObjective[]
   sessions      StudySession[]
-  examinationId String?              @db.Uuid
-  examination   Examination?         @relation(fields: [examinationId], references: [id], onDelete: SetNull)
+  examinationId String?                   @db.Uuid
+  examination   Examination?              @relation(fields: [examinationId], references: [id], onDelete: SetNull)
   positions     ObjectivePosition[]
+  planTopics    StudyPlanTopicObjective[]
 
   @@index([ownerId, status])
   @@index([ownerId, studyAreaId, status])
@@ -460,6 +502,7 @@ model Topic {
   questions     QuestionTopic[]
   noticeRules   NoticeSubjectRule[]
   planTasks     PlanTask[]
+  planTopics    StudyPlanTopic[]
   sessions      StudySession[]
   reviewItems   ReviewItem[]
   errors        ErrorNotebookEntry[]
@@ -490,23 +533,24 @@ model Syllabus {
 }
 
 model SyllabusItem {
-  id                String         @id @default(uuid()) @db.Uuid
-  syllabusId        String         @db.Uuid
-  parentItemId      String?        @db.Uuid
-  subjectId         String?        @db.Uuid
-  topicId           String?        @db.Uuid
-  title             String         @db.VarChar(300)
-  description       String?        @db.Text
-  order             Int            @default(0)
-  weight            Decimal?       @db.Decimal(8, 3)
+  id                String           @id @default(uuid()) @db.Uuid
+  syllabusId        String           @db.Uuid
+  parentItemId      String?          @db.Uuid
+  subjectId         String?          @db.Uuid
+  topicId           String?          @db.Uuid
+  title             String           @db.VarChar(300)
+  description       String?          @db.Text
+  order             Int              @default(0)
+  weight            Decimal?         @db.Decimal(8, 3)
   numberOfQuestions Int?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  syllabus          Syllabus       @relation(fields: [syllabusId], references: [id], onDelete: Cascade)
-  parent            SyllabusItem?  @relation("SyllabusTree", fields: [parentItemId], references: [id], onDelete: Restrict)
-  children          SyllabusItem[] @relation("SyllabusTree")
-  subject           Subject?       @relation(fields: [subjectId], references: [id], onDelete: Restrict)
-  topic             Topic?         @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  syllabus          Syllabus         @relation(fields: [syllabusId], references: [id], onDelete: Cascade)
+  parent            SyllabusItem?    @relation("SyllabusTree", fields: [parentItemId], references: [id], onDelete: Restrict)
+  children          SyllabusItem[]   @relation("SyllabusTree")
+  subject           Subject?         @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  topic             Topic?           @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  planTopics        StudyPlanTopic[]
 
   @@unique([syllabusId, parentItemId, order])
   @@index([syllabusId, parentItemId, order])
@@ -634,30 +678,40 @@ model QuestionTopic {
 }
 
 model StudyPlan {
-  id           String               @id @default(uuid()) @db.Uuid
-  ownerId      String               @db.Uuid
-  name         String               @db.VarChar(160)
-  timezone     String               @default("America/Bahia") @db.VarChar(80)
-  rulesVersion Int                  @default(1)
-  rules        Json
-  active       Boolean              @default(true)
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  owner        User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  objectives   StudyPlanObjective[]
-  availability StudyAvailability[]
-  tasks        PlanTask[]
-  sessions     StudySession[]
+  id                  String               @id @default(uuid()) @db.Uuid
+  ownerId             String               @db.Uuid
+  name                String               @db.VarChar(160)
+  description         String?              @db.Text
+  status              StudyPlanStatus      @default(DRAFT)
+  startDate           DateTime             @db.Date
+  endDate             DateTime?            @db.Date
+  dailyTargetMinutes  Int?
+  weeklyTargetMinutes Int?
+  planningStrategy    PlanningStrategy     @default(BALANCED)
+  timezone            String               @default("America/Bahia") @db.VarChar(80)
+  version             Int                  @default(1)
+  archivedAt          DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  owner               User                 @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  objectives          StudyPlanObjective[]
+  availability        StudyAvailability[]
+  topics              StudyPlanTopic[]
+  tasks               PlanTask[]
+  sessions            StudySession[]
+  revisions           StudyPlanRevision[]
+  previews            PlanningPreview[]
 
-  @@index([ownerId, active])
+  @@index([ownerId, status, createdAt])
 }
 
 model StudyPlanObjective {
-  planId      String    @db.Uuid
-  objectiveId String    @db.Uuid
-  priority    Int       @default(3) @db.SmallInt
-  plan        StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  objective   Objective @relation(fields: [objectiveId], references: [id], onDelete: Restrict)
+  planId         String    @db.Uuid
+  objectiveId    String    @db.Uuid
+  priorityWeight Decimal   @default(1) @db.Decimal(8, 3)
+  createdAt      DateTime  @default(now())
+  plan           StudyPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  objective      Objective @relation(fields: [objectiveId], references: [id], onDelete: Restrict)
 
   @@id([planId, objectiveId])
 }
@@ -668,33 +722,76 @@ model StudyAvailability {
   dayOfWeek   Int       @db.SmallInt
   startMinute Int       @db.SmallInt
   endMinute   Int       @db.SmallInt
-  plan        StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  isEnabled   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  plan        StudyPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
 
   @@unique([planId, dayOfWeek, startMinute])
 }
 
+model StudyPlanTopic {
+  id               String                    @id @default(uuid()) @db.Uuid
+  planId           String                    @db.Uuid
+  topicId          String?                   @db.Uuid
+  syllabusItemId   String?                   @db.Uuid
+  customTitle      String?                   @db.VarChar(200)
+  customSubject    String?                   @db.VarChar(160)
+  estimatedMinutes Int
+  priority         Int                       @default(3) @db.SmallInt
+  status           PlanTopicStatus           @default(PENDING)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  plan             StudyPlan                 @relation(fields: [planId], references: [id], onDelete: Restrict)
+  topic            Topic?                    @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  syllabusItem     SyllabusItem?             @relation(fields: [syllabusItemId], references: [id], onDelete: Restrict)
+  objectives       StudyPlanTopicObjective[]
+  tasks            PlanTask[]
+
+  @@unique([planId, topicId])
+  @@unique([planId, syllabusItemId])
+  @@index([planId, status, priority])
+}
+
+model StudyPlanTopicObjective {
+  studyPlanTopicId String         @db.Uuid
+  objectiveId      String         @db.Uuid
+  studyPlanTopic   StudyPlanTopic @relation(fields: [studyPlanTopicId], references: [id], onDelete: Restrict)
+  objective        Objective      @relation(fields: [objectiveId], references: [id], onDelete: Restrict)
+
+  @@id([studyPlanTopicId, objectiveId])
+  @@index([objectiveId])
+}
+
 model PlanTask {
-  id               String         @id @default(uuid()) @db.Uuid
-  planId           String         @db.Uuid
-  topicId          String?        @db.Uuid
-  title            String         @db.VarChar(200)
+  id               String          @id @default(uuid()) @db.Uuid
+  planId           String          @db.Uuid
+  topicId          String?         @db.Uuid
+  studyPlanTopicId String?         @db.Uuid
+  title            String          @db.VarChar(200)
+  description      String?         @db.Text
+  activityType     ActivityType    @default(THEORY)
+  scheduledDate    DateTime        @db.Date
   scheduledStart   DateTime
+  plannedEndAt     DateTime?
   scheduledMinutes Int
-  status           TaskStatus     @default(PLANNED)
-  origin           TaskOrigin     @default(GENERATED)
-  manualLock       Boolean        @default(false)
-  generationKey    String?        @db.VarChar(120)
-  supersedesId     String?        @db.Uuid
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  plan             StudyPlan      @relation(fields: [planId], references: [id], onDelete: Cascade)
-  topic            Topic?         @relation(fields: [topicId], references: [id], onDelete: SetNull)
-  supersedes       PlanTask?      @relation("TaskReschedule", fields: [supersedesId], references: [id], onDelete: SetNull)
-  rescheduledAs    PlanTask[]     @relation("TaskReschedule")
+  status           TaskStatus      @default(PLANNED)
+  origin           TaskOrigin      @default(GENERATED)
+  manualLock       Boolean         @default(false)
+  generationKey    String?         @db.VarChar(120)
+  supersedesId     String?         @db.Uuid
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  completedAt      DateTime?
+  plan             StudyPlan       @relation(fields: [planId], references: [id], onDelete: Restrict)
+  topic            Topic?          @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  studyPlanTopic   StudyPlanTopic? @relation(fields: [studyPlanTopicId], references: [id], onDelete: SetNull)
+  supersedes       PlanTask?       @relation("TaskReschedule", fields: [supersedesId], references: [id], onDelete: SetNull)
+  rescheduledAs    PlanTask[]      @relation("TaskReschedule")
   sessions         StudySession[]
 
-  @@index([planId, scheduledStart, status])
-  @@index([generationKey])
+  @@unique([planId, generationKey])
+  @@index([planId, scheduledDate, status])
 }
 
 model StudySession {
@@ -710,6 +807,7 @@ model StudySession {
   durationSeconds Int?
   notes           String?           @db.Text
   createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   plan            StudyPlan?        @relation(fields: [planId], references: [id], onDelete: SetNull)
   task            PlanTask?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
@@ -719,6 +817,33 @@ model StudySession {
 
   @@index([userId, startedAt])
   @@index([objectiveId, topicId])
+}
+
+model StudyPlanRevision {
+  id             String    @id @default(uuid()) @db.Uuid
+  planId         String    @db.Uuid
+  revisionNumber Int
+  reason         String    @db.VarChar(200)
+  changeSummary  Json
+  createdAt      DateTime  @default(now())
+  plan           StudyPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@unique([planId, revisionNumber])
+}
+
+model PlanningPreview {
+  id          String                @id @default(uuid()) @db.Uuid
+  planId      String                @db.Uuid
+  planVersion Int
+  kind        PlanningPreviewKind
+  status      PlanningPreviewStatus @default(PENDING)
+  proposal    Json
+  expiresAt   DateTime
+  appliedAt   DateTime?
+  createdAt   DateTime              @default(now())
+  plan        StudyPlan             @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([planId, status, expiresAt])
 }
 
 model QuestionAttempt {

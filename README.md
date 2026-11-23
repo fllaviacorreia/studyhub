@@ -1,5 +1,7 @@
 # StudyHub
 
+Plataforma multiusuário para organizar áreas, objetivos, catálogo e planos de estudo. O módulo de planejamento oferece disponibilidade semanal, assuntos compartilhados, geração determinística, prévia/versionamento, replanejamento protegido, agenda, sessões e indicadores. Consulte [docs/planning.md](docs/planning.md).
+
 Plataforma web multiusuário e multiobjetivo para organizar estudos, editais, conteúdos, questões, planejamento e evolução. SEFAZ-BA e ANPD são apenas exemplos de uso.
 
 O projeto possui fundação funcional com PostgreSQL, Prisma e autenticação local via Auth.js, gerenciamento privado de áreas e objetivos e um catálogo compartilhado de concursos, editais e conteúdos programáticos. Consulte [a arquitetura](docs/architecture.md), [o catálogo](docs/catalog.md) e [o plano incremental](docs/implementation-plan.md).
@@ -24,10 +26,10 @@ Após entrar, use `/app/areas`, `/app/objetivos` e `/app/concursos`. A API priva
 
 ## Variáveis de ambiente
 
-| Variável | Uso | Exposição |
-| --- | --- | --- |
-| `DATABASE_URL` | conexão PostgreSQL usada somente pelo Prisma | backend |
-| `AUTH_SECRET` | assinatura e criptografia da sessão Auth.js | backend |
+| Variável       | Uso                                          | Exposição |
+| -------------- | -------------------------------------------- | --------- |
+| `DATABASE_URL` | conexão PostgreSQL usada somente pelo Prisma | backend   |
+| `AUTH_SECRET`  | assinatura e criptografia da sessão Auth.js  | backend   |
 
 Nenhuma variável desta entrega usa o prefixo `NEXT_PUBLIC_`.
 

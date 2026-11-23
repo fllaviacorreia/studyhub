@@ -1,7 +1,165 @@
 "use client";
 import { FormEvent, useState, useTransition } from "react";
 type Item = { id: string; name: string };
-async function send(url: string, body: object) { const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); if (!response.ok) { const error = await response.json().catch(() => ({})); throw new Error(error.detail || "Não foi possível salvar."); } }
+async function send(url: string, body: object) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || "Não foi possível salvar.");
+  }
+}
 const field = "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2";
-export function CatalogAdmin({ organizations, boards }: { organizations: Item[]; boards: Item[] }) { const [message, setMessage] = useState(""); const [pending, startTransition] = useTransition(); function submit(event: FormEvent<HTMLFormElement>, kind: "organization" | "board" | "exam") { event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); setMessage(""); startTransition(async () => { try { if (kind === "organization") await send("/api/v1/organizations", { name: data.get("name"), acronym: data.get("acronym") || null, country: "BR" }); else if (kind === "board") await send("/api/v1/exam-boards", { name: data.get("name"), acronym: data.get("acronym") || null }); else await send("/api/v1/examinations", { organizationId: data.get("organizationId"), examBoardId: data.get("examBoardId") || null, title: data.get("title"), year: data.get("year") ? Number(data.get("year")) : null, status: "PLANNED", publicationStatus: "DRAFT", sourceReference: data.get("sourceReference") || null }); form.reset(); setMessage("Registro salvo como rascunho. Recarregue a página para atualizar as opções."); } catch (error) { setMessage((error as Error).message); } }); }
-  return <div className="space-y-5">{message && <p aria-live="polite" className="rounded-xl bg-teal-50 p-3 text-sm text-teal-900">{message}</p>}<div className="grid gap-5 lg:grid-cols-2"><form onSubmit={(event) => submit(event, "organization")} className="space-y-3 rounded-2xl border bg-white p-5"><h2 className="font-semibold">Nova instituição</h2><label className="block text-sm">Nome<input required name="name" className={field}/></label><label className="block text-sm">Sigla<input name="acronym" className={field}/></label><button disabled={pending} className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white">Salvar</button></form><form onSubmit={(event) => submit(event, "board")} className="space-y-3 rounded-2xl border bg-white p-5"><h2 className="font-semibold">Nova banca</h2><label className="block text-sm">Nome<input required name="name" className={field}/></label><label className="block text-sm">Sigla<input name="acronym" className={field}/></label><button disabled={pending} className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white">Salvar</button></form></div><form onSubmit={(event) => submit(event, "exam")} className="grid gap-3 rounded-2xl border bg-white p-5 md:grid-cols-2"><h2 className="font-semibold md:col-span-2">Novo concurso</h2><label className="text-sm">Título<input required name="title" className={field}/></label><label className="text-sm">Ano<input name="year" type="number" className={field}/></label><label className="text-sm">Instituição<select required name="organizationId" className={field}><option value="">Selecione</option>{organizations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label className="text-sm">Banca<select name="examBoardId" className={field}><option value="">Não confirmada</option>{boards.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label className="text-sm md:col-span-2">Referência da fonte<input name="sourceReference" className={field}/></label><button disabled={pending || !organizations.length} className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white md:col-span-2">Salvar rascunho</button></form></div>; }
+export function CatalogAdmin({
+  organizations,
+  boards,
+}: {
+  organizations: Item[];
+  boards: Item[];
+}) {
+  const [message, setMessage] = useState("");
+  const [pending, startTransition] = useTransition();
+  function submit(
+    event: FormEvent<HTMLFormElement>,
+    kind: "organization" | "board" | "exam",
+  ) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setMessage("");
+    startTransition(async () => {
+      try {
+        if (kind === "organization")
+          await send("/api/v1/organizations", {
+            name: data.get("name"),
+            acronym: data.get("acronym") || null,
+            country: "BR",
+          });
+        else if (kind === "board")
+          await send("/api/v1/exam-boards", {
+            name: data.get("name"),
+            acronym: data.get("acronym") || null,
+          });
+        else
+          await send("/api/v1/examinations", {
+            organizationId: data.get("organizationId"),
+            examBoardId: data.get("examBoardId") || null,
+            title: data.get("title"),
+            year: data.get("year") ? Number(data.get("year")) : null,
+            status: "PLANNED",
+            publicationStatus: "DRAFT",
+            sourceReference: data.get("sourceReference") || null,
+          });
+        form.reset();
+        setMessage(
+          "Registro salvo como rascunho. Recarregue a página para atualizar as opções.",
+        );
+      } catch (error) {
+        setMessage((error as Error).message);
+      }
+    });
+  }
+  return (
+    <div className="space-y-5">
+      {message && (
+        <p
+          aria-live="polite"
+          className="rounded-xl bg-teal-50 p-3 text-sm text-teal-900"
+        >
+          {message}
+        </p>
+      )}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <form
+          onSubmit={(event) => submit(event, "organization")}
+          className="space-y-3 rounded-2xl border bg-white p-5"
+        >
+          <h2 className="font-semibold">Nova instituição</h2>
+          <label className="block text-sm">
+            Nome
+            <input required name="name" className={field} />
+          </label>
+          <label className="block text-sm">
+            Sigla
+            <input name="acronym" className={field} />
+          </label>
+          <button
+            disabled={pending}
+            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white"
+          >
+            Salvar
+          </button>
+        </form>
+        <form
+          onSubmit={(event) => submit(event, "board")}
+          className="space-y-3 rounded-2xl border bg-white p-5"
+        >
+          <h2 className="font-semibold">Nova banca</h2>
+          <label className="block text-sm">
+            Nome
+            <input required name="name" className={field} />
+          </label>
+          <label className="block text-sm">
+            Sigla
+            <input name="acronym" className={field} />
+          </label>
+          <button
+            disabled={pending}
+            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white"
+          >
+            Salvar
+          </button>
+        </form>
+      </div>
+      <form
+        onSubmit={(event) => submit(event, "exam")}
+        className="grid gap-3 rounded-2xl border bg-white p-5 md:grid-cols-2"
+      >
+        <h2 className="font-semibold md:col-span-2">Novo concurso</h2>
+        <label className="text-sm">
+          Título
+          <input required name="title" className={field} />
+        </label>
+        <label className="text-sm">
+          Ano
+          <input name="year" type="number" className={field} />
+        </label>
+        <label className="text-sm">
+          Instituição
+          <select required name="organizationId" className={field}>
+            <option value="">Selecione</option>
+            {organizations.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm">
+          Banca
+          <select name="examBoardId" className={field}>
+            <option value="">Não confirmada</option>
+            {boards.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm md:col-span-2">
+          Referência da fonte
+          <input name="sourceReference" className={field} />
+        </label>
+        <button
+          disabled={pending || !organizations.length}
+          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white md:col-span-2"
+        >
+          Salvar rascunho
+        </button>
+      </form>
+    </div>
+  );
+}

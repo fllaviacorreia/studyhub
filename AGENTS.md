@@ -21,4 +21,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Fatos de progresso independem do plano mutável.
 - Schema exige migração, constraints, `prisma validate` e testes de isolamento.
 - Segredos são backend-only, nunca `NEXT_PUBLIC_`.
-- Execute `npm run check` e atualize a documentação antes do handoff.
+- Execute `npm run check`, `npm run format` e atualize a documentação antes do handoff.
+- Ao finalizar as modificações, checagens e testes, gere commits, título e descrição para pull request.
