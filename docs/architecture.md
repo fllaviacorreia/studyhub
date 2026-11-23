@@ -112,3 +112,7 @@ A biblioteca e o banco objetivo reutilizam os esboços `Material` e `Question` d
 ## Revisões e simulados implementados
 
 Agendamentos são deduplicados por usuário e assunto, avaliações formam histórico imutável e o caderno de erros acompanha questões sem substituir tentativas. Simulados reutilizam sessões, versões e correção do banco de questões, acrescentando configuração, prazo e snapshot de pontuação. Tarefas podem referenciar revisões e simulados sem duplicar tempo. Regras e endpoints estão em [reviews-and-mock-exams.md](reviews-and-mock-exams.md).
+
+## Tutor inteligente implementado
+
+O tutor usa uma porta `AIProvider` e um adaptador servidor para a OpenAI Responses API. Conversas, fontes, consumo, gerações e recomendações pertencem ao usuário e passam pela DAL. A recuperação consulta somente materiais publicados compartilhados/públicos ou do próprio autor; indicadores continuam calculados pelos módulos determinísticos. Detalhes, limites e política de dados estão em [ai-study-assistant.md](ai-study-assistant.md).

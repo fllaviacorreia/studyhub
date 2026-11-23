@@ -2,7 +2,7 @@
 
 Plataforma modular de estudos com organização pessoal, catálogo, planos, biblioteca educacional, banco de questões e acompanhamento de desempenho.
 
-Documentação dos módulos: [arquitetura](docs/architecture.md), [catálogo](docs/catalog.md), [planejamento](docs/planning.md), [biblioteca/aprendizagem](docs/learning.md) e [revisões e simulados](docs/reviews-and-mock-exams.md).
+Documentação dos módulos: [arquitetura](docs/architecture.md), [catálogo](docs/catalog.md), [planejamento](docs/planning.md), [biblioteca/aprendizagem](docs/learning.md), [revisões e simulados](docs/reviews-and-mock-exams.md) e [tutor inteligente](docs/ai-study-assistant.md).
 
 Plataforma multiusuário para organizar áreas, objetivos, catálogo e planos de estudo. O módulo de planejamento oferece disponibilidade semanal, assuntos compartilhados, geração determinística, prévia/versionamento, replanejamento protegido, agenda, sessões e indicadores. Consulte [docs/planning.md](docs/planning.md).
 
@@ -32,11 +32,14 @@ Após entrar, use `/app/areas`, `/app/objetivos` e `/app/concursos`. A API priva
 
 ## Variáveis de ambiente
 
-| Variável       | Uso                                           | Exposição |
-| -------------- | --------------------------------------------- | --------- |
-| `DATABASE_URL` | conexão PostgreSQL usada somente pelo Prisma  | backend   |
-| `ADMINER_PORT` | porta local opcional do Adminer (padrão 8081) | local     |
-| `AUTH_SECRET`  | assinatura e criptografia da sessão Auth.js   | backend   |
+| Variável         | Uso                                           | Exposição |
+| ---------------- | --------------------------------------------- | --------- |
+| `DATABASE_URL`   | conexão PostgreSQL usada somente pelo Prisma  | backend   |
+| `ADMINER_PORT`   | porta local opcional do Adminer (padrão 8081) | local     |
+| `AUTH_SECRET`    | assinatura e criptografia da sessão Auth.js   | backend   |
+| `OPENAI_API_KEY` | credencial da Responses API                   | backend   |
+| `OPENAI_MODEL`   | modelo disponível no projeto OpenAI           | backend   |
+| `AI_*`           | timeout, janela de contexto e limites de uso  | backend   |
 
 Nenhuma variável desta entrega usa o prefixo `NEXT_PUBLIC_`.
 
