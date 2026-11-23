@@ -103,3 +103,7 @@ Não há implementação da Trilha Fiscal neste repositório ou histórico (some
 ## Planejamento implementado
 
 O motor de planejamento é um serviço puro em `src/domains/planning`, separado de HTTP e Prisma. A DAL privada aplica escopo do proprietário em todas as consultas. Geração e replanejamento usam prévias persistidas, versão otimista, validade de 30 minutos, chaves idempotentes e revisões transacionais. Detalhes e regras estão em [planning.md](planning.md).
+
+## Biblioteca e aprendizagem implementadas
+
+A biblioteca e o banco objetivo reutilizam os esboços `Material` e `Question` da fundação. Publicações mantêm versões imutáveis, sessões fixam ordem e versão, e tentativas são fatos históricos privados. A correção é determinística em `src/domains/learning`; HTTP apenas adapta casos de uso e a DAL `server-only` aplica escopo. O tempo permanece exclusivamente em `StudySession`. Regras e endpoints estão em [learning.md](learning.md).

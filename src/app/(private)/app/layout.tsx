@@ -57,6 +57,24 @@ export default async function PrivateLayout({
           >
             Concursos
           </Link>
+          <Link
+            href="/app/biblioteca"
+            className="flex rounded-xl px-3 py-3 font-medium hover:bg-white/10"
+          >
+            Biblioteca
+          </Link>
+          <Link
+            href="/app/questoes"
+            className="flex rounded-xl px-3 py-3 font-medium hover:bg-white/10"
+          >
+            Questões
+          </Link>
+          <Link
+            href="/app/desempenho"
+            className="flex rounded-xl px-3 py-3 font-medium hover:bg-white/10"
+          >
+            Desempenho
+          </Link>
         </nav>
         <p className="mt-auto px-3 text-xs leading-5 text-slate-400">
           Novos recursos serão liberados por etapas, sem comprometer seus dados.
@@ -128,6 +146,18 @@ export default async function PrivateLayout({
               className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold hover:bg-teal-50"
             >
               Concursos
+            </Link>
+            <Link
+              href="/app/biblioteca"
+              className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold hover:bg-teal-50"
+            >
+              Biblioteca
+            </Link>
+            <Link
+              href="/app/questoes"
+              className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold hover:bg-teal-50"
+            >
+              Questões
             </Link>
           </nav>
         </header>

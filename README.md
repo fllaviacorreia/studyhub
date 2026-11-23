@@ -1,5 +1,9 @@
 # StudyHub
 
+Plataforma modular de estudos com organização pessoal, catálogo, planos, biblioteca educacional, banco de questões e acompanhamento de desempenho.
+
+Documentação dos módulos: [arquitetura](docs/architecture.md), [catálogo](docs/catalog.md), [planejamento](docs/planning.md) e [biblioteca/aprendizagem](docs/learning.md).
+
 Plataforma multiusuário para organizar áreas, objetivos, catálogo e planos de estudo. O módulo de planejamento oferece disponibilidade semanal, assuntos compartilhados, geração determinística, prévia/versionamento, replanejamento protegido, agenda, sessões e indicadores. Consulte [docs/planning.md](docs/planning.md).
 
 Plataforma web multiusuário e multiobjetivo para organizar estudos, editais, conteúdos, questões, planejamento e evolução. SEFAZ-BA e ANPD são apenas exemplos de uso.
@@ -13,7 +17,7 @@ Requisitos: Node.js 20+, npm e Docker com Compose.
 Copie `.env.example` para `.env`, substitua `AUTH_SECRET` por um segredo aleatório e prepare o ambiente:
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres adminer
 npm install
 npm run db:generate
 npm run db:migrate:deploy
@@ -22,14 +26,17 @@ npm run dev
 
 A aplicação estará em `http://localhost:3000`. O health check do banco está em `GET /api/v1/health`.
 
+O Adminer estará disponível em `http://localhost:8081` por padrão. Para acessar o banco local, use sistema `PostgreSQL`, servidor `postgres`, usuário e senha `studyhub` e banco `studyhub`. A porta pode ser alterada com `ADMINER_PORT`; essas credenciais são exclusivas do ambiente de desenvolvimento.
+
 Após entrar, use `/app/areas`, `/app/objetivos` e `/app/concursos`. A API privada continua sob `/api/v1/study-areas` e `/api/v1/study-goals`; a referência do catálogo está em [docs/catalog.md](docs/catalog.md).
 
 ## Variáveis de ambiente
 
-| Variável       | Uso                                          | Exposição |
-| -------------- | -------------------------------------------- | --------- |
-| `DATABASE_URL` | conexão PostgreSQL usada somente pelo Prisma | backend   |
-| `AUTH_SECRET`  | assinatura e criptografia da sessão Auth.js  | backend   |
+| Variável       | Uso                                           | Exposição |
+| -------------- | --------------------------------------------- | --------- |
+| `DATABASE_URL` | conexão PostgreSQL usada somente pelo Prisma  | backend   |
+| `ADMINER_PORT` | porta local opcional do Adminer (padrão 8081) | local     |
+| `AUTH_SECRET`  | assinatura e criptografia da sessão Auth.js   | backend   |
 
 Nenhuma variável desta entrega usa o prefixo `NEXT_PUBLIC_`.
 
